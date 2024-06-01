@@ -2,7 +2,7 @@ import serial
 
 # 设置串口参数
 serial_port = '/dev/ttyUSB0'  # 根据实际情况设置
-baud_rate = 57600            # 波特率
+baud_rate = 57600           # 波特率
 
 # 打开串口
 ser = serial.Serial(serial_port, baud_rate)
