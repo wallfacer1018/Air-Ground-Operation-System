@@ -1,0 +1,16 @@
+<launch>
+    <!-- world -->
+    <include file="$(find easondrone_gazebo)/launch/empty_world.launch"/>
+
+    <!-- 1号无人机 -->
+    <include file="$(find easondrone_gazebo)/launch/sitl_p450.launch"/>
+
+    <include file="$(find easondrone_gazebo)/launch/transform.launch"/>
+
+    <include file="$(find easondrone_control)/launch/control_p450_indoor.launch"/>
+
+    <node pkg="cuadc" type="main_node" name="main_node" launch-prefix="gnome-terminal --"/>
+
+    <!-- 启动rviz -->
+    <node type="rviz" name="rviz" pkg="rviz" args="-d $(find cuadc)/config/CUADC.rviz"/>
+</launch>
