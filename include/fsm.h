@@ -1,5 +1,5 @@
 //
-// Created by hyx020222 on 6/23/24.
+// Created by Eason Hua on 6/23/24.
 //
 
 #ifndef CUADC_FSM_H
@@ -18,7 +18,8 @@
 #include <geographic_msgs/GeoPointStamped.h>
 #include <easondrone_msgs/ControlCommand.h>
 
-#define NODE_NAME "main_node"
+#define NODE_NAME "cuadc_node"
+#define FLIGHT_HEIGHT 2.5
 
 using namespace std;
 
@@ -66,136 +67,14 @@ private:
         gp_origin_pub.publish(gp_origin);
     }
 
-    inline void execFSMCallback(const ros::TimerEvent &e){
-        switch (exec_state_) {
-            case IDLE: {
-                ROS_INFO("FSM_EXEC_STATE: IDLE");
-
-                if (mavros_state.mode != "OFFBOARD") {
-                    if (set_mode_client.call(offb_set_mode) && offb_set_mode.response.mode_sent) {
-                        ROS_INFO("Offboard enabled");
-                    }
-                }
-                else {
-                    if (!mavros_state.armed) {
-                        if (arming_client.call(arm_cmd) && arm_cmd.response.success) {
-                            ROS_INFO("Vehicle armed");
-                            changeFSMExecState(TAKE_OFF);
-                        }
-                    }
-                }
-                break;
-            }
-
-            case TAKE_OFF: {
-                ROS_INFO("FSM_EXEC_STATE: TAKE_OFF");
-
-                if (!have_odom_) {
-                    cout << "[fsm] no odom." << endl;
-                    return;
-                }
-
-                end_pt_(0) = 0; end_pt_(1) = 0; end_pt_(2) = 2.5;
-
-                if ((odom_pos_ - end_pt_).norm() < 0.2) {
-                    cout << "[fsm] close to take off height" << endl;
-                    changeFSMExecState(TO_THROW);
-                }
-                else {
-//                    pose_cmd.header.stamp = ros::Time::now();
-//                    pose_cmd.position.x = end_pt_(0);
-//                    pose_cmd.position.y = end_pt_(1);
-//                    pose_cmd.position.z = end_pt_(2);
-//                    
-//                    local_pos_pub.publish(pose_cmd);
-
-                    easondrone_cmd_.header.stamp = ros::Time::now();
-                    easondrone_cmd_.Mode = easondrone_msgs::ControlCommand::Move;
-                    easondrone_cmd_.Command_ID += 1;
-                    easondrone_cmd_.Reference_State.position_ref[0] = end_pt_(0);
-                    easondrone_cmd_.Reference_State.position_ref[1] = end_pt_(1);
-                    easondrone_cmd_.Reference_State.position_ref[2] = end_pt_(2);
-                    easondrone_cmd_pub_.publish(easondrone_cmd_);
-                }
-                break;
-            }
-
-            case TO_THROW:{
-                ROS_INFO("FSM_EXEC_STATE: TO_THROW");
-
-                if (!have_odom_) {
-                    cout << "[fsm] no odom." << endl;
-                    return;
-                }
-//                else if (abs(odom_pos_(0) - 5) < 0.2) {
-//                    cout << "[fsm] close to take off height" << endl;
-//                    changeFSMExecState(TO_THROW);
-//                }
-//                else {
-//                    pose.pose.position.x = 5;
-//                    pose.pose.position.y = 0;
-//                    pose.pose.position.z = 2.5;
-//
-//                    local_pos_pub.publish(pose);
-//                }
-                break;
-            }
-
-            case THROW:
-                ROS_INFO("FSM_EXEC_STATE: THROW");
-
-                if (!have_odom_) {
-                    cout << "[fsm] no odom." << endl;
-                    return;
-                }
-
-                break;
-            case TO_SEE:
-                ROS_INFO("FSM_EXEC_STATE: ERROR");
-
-                if (!have_odom_) {
-                    cout << "[fsm] no odom." << endl;
-                    return;
-                }
-
-                break;
-            case SEE:
-                ROS_INFO("FSM_EXEC_STATE: ERROR");
-
-                if (!have_odom_) {
-                    cout << "[fsm] no odom." << endl;
-                    return;
-                }
-
-                break;
-            case RETURN:
-                ROS_INFO("FSM_EXEC_STATE: ERROR");
-
-                if (!have_odom_) {
-                    cout << "[fsm] no odom." << endl;
-                    return;
-                }
-
-                break;
-            case LAND:
-                ROS_INFO("FSM_EXEC_STATE: ERROR");
-
-                if (!have_odom_) {
-                    cout << "[fsm] no odom." << endl;
-                    return;
-                }
-
-                break;
-        }
-    }
+    void execFSMCallback(const ros::TimerEvent &e);
 
     inline void state_cb(const mavros_msgs::State::ConstPtr &msg){
         mavros_state = *msg;
     }
 
     // 保存无人机当前里程计信息，包括位置、速度和姿态
-    inline void odometryCallback(const nav_msgs::OdometryConstPtr &msg)
-    {
+    inline void odometryCallback(const nav_msgs::OdometryConstPtr &msg){
         odom_pos_(0) = msg->pose.pose.position.x;
         odom_pos_(1) = msg->pose.pose.position.y;
         odom_pos_(2) = msg->pose.pose.position.z;
