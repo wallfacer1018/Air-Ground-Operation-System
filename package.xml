@@ -1,10 +1,9 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>cuadc</name>
-  <version>0.0.1</version>
+  <version>0.2.0</version>
   <description>
-    This package attempts to show the features of ROS step-by-step,
-    including using messages, servers, parameters, etc.
+    CUADC '24
   </description>
   <maintainer email="12010508@mail.sustech.edu.cn">Eason Hua</maintainer>
   <license>MIT</license>

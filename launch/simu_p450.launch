@@ -7,10 +7,7 @@
 
     <include file="$(find easondrone_gazebo)/launch/transform.launch"/>
 
-    <include file="$(find easondrone_control)/launch/control_p450_indoor.launch"/>
-
-    <!--     STATION-->
-    <include file="$(find easondrone_station)/launch/easondrone_station.launch"/>
+    <include file="$(find cuadc)/launch/control_p450_indoor.launch"/>
 
     <node pkg="cuadc" type="main_node" name="main_node" launch-prefix="gnome-terminal --"/>
 

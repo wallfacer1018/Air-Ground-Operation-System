@@ -11,6 +11,10 @@ roslaunch cuadc simu_p450.launch
 
 ## Release Notes
 
+### [v0.2.0] - 2024-06-24
+
+implement: Takeoff
+
 ### [v0.1.0] - 2024-06-23
 
 implement: OFFBOARD & arming
