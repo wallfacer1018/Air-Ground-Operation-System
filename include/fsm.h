@@ -14,9 +14,10 @@
 #include <iostream>
 #include <nav_msgs/Odometry.h>
 #include <nav_msgs/Path.h>
-#include <easondrone_msgs/ControlCommand.h>
-#include <mavros_msgs/CommandBool.h>
 #include <mavros_msgs/SetMode.h>
+#include <mavros_msgs/CommandBool.h>
+#include <mavros_msgs/State.h>
+#include <easondrone_msgs/ControlCommand.h>
 
 #define NODE_NAME "main_node"
 
@@ -41,15 +42,18 @@ private:
 
     Eigen::Vector3d odom_pos_, odom_vel_, odom_acc_; // odometry state
     Eigen::Quaterniond odom_orient_;
-
     bool have_odom_;
+    mavros_msgs::State mavros_state;
 
-    //即将发布的command
-    easondrone_msgs::ControlCommand Command_to_pub;
+    //变量声明 - 服务
+    mavros_msgs::SetMode offb_set_mode;
+    mavros_msgs::CommandBool arm_cmd;
+    geometry_msgs::PoseStamped pose;
 
     ros::Timer exec_timer_;
-    ros::Subscriber odom_sub_;
-    ros::Publisher move_pub;
+    ros::Subscriber state_sub, odom_sub_;
+    ros::Publisher local_pos_pub;
+    ros::ServiceClient set_mode_client, arming_client;
 
     // 保存无人机当前里程计信息，包括位置、速度和姿态
     inline void odometryCallback(const nav_msgs::OdometryConstPtr &msg)
@@ -72,20 +76,31 @@ private:
         have_odom_ = true;
     }
 
+    inline void state_cb(const mavros_msgs::State::ConstPtr &msg){
+        mavros_state = *msg;
+    }
+
     inline void changeFSMExecState(FSM_EXEC_STATE new_state, string pos_call){
         exec_state_ = new_state;
     }
 
     inline void execFSMCallback(const ros::TimerEvent &e){
         switch (exec_state_) {
-            case IDLE:{
+            case IDLE: {
                 ROS_INFO("FSM_EXEC_STATE: IDLE");
 
-                if (!have_odom_) {
-                    cout << "[fsm] no odom." << endl;
-                    return;
+                if (mavros_state.mode != "OFFBOARD") {
+                    if (set_mode_client.call(offb_set_mode) && offb_set_mode.response.mode_sent) {
+                        ROS_INFO("Offboard enabled");
+                    }
+                } else {
+                    if (!mavros_state.armed) {
+                        if (arming_client.call(arm_cmd) && arm_cmd.response.success) {
+                            ROS_INFO("Vehicle armed");
+                            changeFSMExecState(TAKE_OFF, "FSM");
+                        }
+                    }
                 }
-                changeFSMExecState(TAKE_OFF, "FSM");
                 break;
             }
 
@@ -100,42 +115,37 @@ private:
                     cout << "[fsm] close to take off height" << endl;
                     changeFSMExecState(TO_THROW, "FSM");
                 }
-                else{
-                    Command_to_pub.header.stamp = ros::Time::now();
-                    Command_to_pub.Mode = easondrone_msgs::ControlCommand::Takeoff;
-                    Command_to_pub.Command_ID += 1;
-                    move_pub.publish(Command_to_pub);
-                }
+                else {
+                    pose.pose.position.x = 0;
+                    pose.pose.position.y = 0;
+                    pose.pose.position.z = 2.5;
 
+                    local_pos_pub.publish(pose);
+                }
                 break;
             }
 
-            case TO_THROW:
+            case TO_THROW:{
                 ROS_INFO("FSM_EXEC_STATE: TO_THROW");
 
                 if (!have_odom_) {
                     cout << "[fsm] no odom." << endl;
                     return;
                 }
-                else if (abs(odom_pos_(2) - 2.5) < 0.2) {
+                else if (abs(odom_pos_(0) - 5) < 0.2) {
                     cout << "[fsm] close to take off height" << endl;
                     changeFSMExecState(TO_THROW, "FSM");
                 }
-                else{
-                    Command_to_pub.header.stamp = ros::Time::now();
-                    Command_to_pub.Mode = easondrone_msgs::ControlCommand::Move;
-                    Command_to_pub.Command_ID += 1;
-                    move_pub.publish(Command_to_pub);
+                else {
+                    pose.pose.position.x = 5;
+                    pose.pose.position.y = 0;
+                    pose.pose.position.z = 2.5;
+
+                    local_pos_pub.publish(pose);
                 }
-
-                Command_to_pub.header.stamp = ros::Time::now();
-                Command_to_pub.Mode = easondrone_msgs::ControlCommand::Move;
-                Command_to_pub.Command_ID += 1;
-                Command_to_pub.Reference_State.position_ref[0] = 5;
-                Command_to_pub.Reference_State.position_ref[1] = 0;
-                Command_to_pub.Reference_State.position_ref[1] = 2.5;
-
                 break;
+            }
+
             case THROW:
                 ROS_INFO("FSM_EXEC_STATE: THROW");
 
@@ -193,27 +203,22 @@ public:
 
         /* callback */
         exec_timer_ = nh.createTimer(ros::Duration(0.01), &FSM::execFSMCallback, this);
+        state_sub = nh.subscribe<mavros_msgs::State>("/mavros/state", 10, &FSM::state_cb, this);
         odom_sub_ = nh.subscribe("/mavros/local_position/odom", 1, &FSM::odometryCallback, this);
         //　【发布】　控制指令
-        move_pub = nh.advertise<easondrone_msgs::ControlCommand>("/easondrone/control_command", 10);
+        local_pos_pub = nh.advertise<geometry_msgs::PoseStamped>("/mavros/setpoint_position/local", 10);
+        // 【服务】解锁/上锁 本服务通过Mavros功能包 /plugins/command.cpp 实现
+        arming_client = nh.serviceClient<mavros_msgs::CommandBool>("/mavros/cmd/arming");
+        // 【服务】修改系统模式 本服务通过Mavros功能包 /plugins/command.cpp 实现
+        set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("/mavros/set_mode");
 
-        // 初始化命令 - Idle模式 电机怠速旋转 等待来自上层的控制指令
-        Command_to_pub.Mode                                = easondrone_msgs::ControlCommand::Idle;
-        Command_to_pub.Command_ID                          = 0;
-        Command_to_pub.source = NODE_NAME;
-        Command_to_pub.Reference_State.Move_mode           = easondrone_msgs::PositionReference::XYZ_POS;
-        Command_to_pub.Reference_State.Move_frame          = easondrone_msgs::PositionReference::ENU_FRAME;
-        Command_to_pub.Reference_State.position_ref[0]     = 0.0;
-        Command_to_pub.Reference_State.position_ref[1]     = 0.0;
-        Command_to_pub.Reference_State.position_ref[2]     = 0.0;
-        Command_to_pub.Reference_State.velocity_ref[0]     = 0.0;
-        Command_to_pub.Reference_State.velocity_ref[1]     = 0.0;
-        Command_to_pub.Reference_State.velocity_ref[2]     = 0.0;
-        Command_to_pub.Reference_State.acceleration_ref[0] = 0.0;
-        Command_to_pub.Reference_State.acceleration_ref[1] = 0.0;
-        Command_to_pub.Reference_State.acceleration_ref[2] = 0.0;
-        Command_to_pub.Reference_State.yaw_ref             = 0.0;
-        Command_to_pub.Reference_State.yaw_rate_ref        = 0.0;
+        offb_set_mode.request.custom_mode = "OFFBOARD";
+
+        arm_cmd.request.value = true;
+
+        pose.pose.position.x = 0;
+        pose.pose.position.y = 0;
+        pose.pose.position.z = 0;
     };
 };
 
