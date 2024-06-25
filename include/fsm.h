@@ -11,6 +11,7 @@
 #include <std_msgs/Header.h>
 #include <nav_msgs/Odometry.h>
 #include <nav_msgs/Path.h>
+#include <sensor_msgs/Image.h>
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/CommandBool.h>
 #include <mavros_msgs/State.h>
@@ -45,6 +46,7 @@ private:
     bool have_odom_;
     mavros_msgs::State mavros_state;
     geographic_msgs::GeoPointStamped gp_origin;
+    sensor_msgs::Image camera_image_;
 
     //变量声明 - 服务
     mavros_msgs::SetMode offb_set_mode;
@@ -55,7 +57,7 @@ private:
     easondrone_msgs::ControlCommand easondrone_cmd_;
 
     ros::Timer gp_origin_timer_, exec_timer_;
-    ros::Subscriber state_sub, odom_sub_;
+    ros::Subscriber state_sub, odom_sub_, camera_sub_;
     ros::Publisher gp_origin_pub, local_pos_pub, easondrone_cmd_pub_;
     ros::ServiceClient set_mode_client, arming_client;
 
@@ -93,6 +95,10 @@ private:
         have_odom_ = true;
     }
 
+    inline void cameraCallback(const sensor_msgs::ImageConstPtr &msg){
+        camera_image_ = *msg;
+    }
+
 public:
     FSM() : exec_state_(IDLE) {}
     ~FSM() {}
@@ -101,13 +107,17 @@ public:
         /******** callback ********/
         gp_origin_timer_ = nh.createTimer(ros::Duration(0.01), &FSM::gpOriginCallback, this);
         exec_timer_ = nh.createTimer(ros::Duration(0.01), &FSM::execFSMCallback, this);
+
         state_sub = nh.subscribe<mavros_msgs::State>("/mavros/state", 10, &FSM::state_cb, this);
-        odom_sub_ = nh.subscribe("/mavros/local_position/odom", 1, &FSM::odometryCallback, this);
+        odom_sub_ = nh.subscribe("/mavros/local_position/odom", 10, &FSM::odometryCallback, this);
+        camera_sub_ = nh.subscribe("/monocular/image_raw", 10, &FSM::cameraCallback, this);
+
         gp_origin_pub = nh.advertise<geographic_msgs::GeoPointStamped>("/mavros/global_position/gp_origin", 10);
         //　【发布】位置/速度/加速度期望值 坐标系 ENU系 本话题要发送至飞控(通过Mavros功能包 /plugins/setpoint_raw.cpp发送), 对应Mavlink消息为SET_POSITION_TARGET_LOCAL_NED (#84), 对应的飞控中的uORB消息为position_setpoint_triplet.msg
         local_pos_pub = nh.advertise<mavros_msgs::PositionTarget>("/mavros/setpoint_position/local", 10);
         //　【发布】控制指令
         easondrone_cmd_pub_ = nh.advertise<easondrone_msgs::ControlCommand>("/easondrone/control_command", 10);
+
         // 【服务】解锁/上锁 本服务通过Mavros功能包 /plugins/command.cpp 实现
         arming_client = nh.serviceClient<mavros_msgs::CommandBool>("/mavros/cmd/arming");
         // 【服务】修改系统模式 本服务通过Mavros功能包 /plugins/command.cpp 实现

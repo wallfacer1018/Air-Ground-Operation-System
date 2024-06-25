@@ -8,6 +8,7 @@ Panels:
         - /Sensor1
         - /Sensor1/RGBD1
         - /Sensor1/LiDAR1
+        - /Sensor1/Image_down1
         - /Mapping1
         - /Planning1
       Splitter Ratio: 0.43611112236976624
@@ -26,7 +27,7 @@ Panels:
   - Class: rviz/Time
     Name: Time
     SyncMode: 0
-    SyncSource: Image_color
+    SyncSource: DepthCloud
 Preferences:
   PromptSaveOnExit: false
 Toolbars:
@@ -262,8 +263,8 @@ Visualization Manager:
             - Alpha: 0.30000001192092896
               Autocompute Intensity Bounds: true
               Autocompute Value Bounds:
-                Max Value: 0.10394811630249023
-                Min Value: -0.12589287757873535
+                Max Value: -0.09758186340332031
+                Min Value: -0.1609787940979004
                 Value: true
               Axis: Z
               Channel Name: intensity
@@ -291,7 +292,7 @@ Visualization Manager:
           Name: LiDAR
         - Class: rviz/Image
           Enabled: true
-          Image Topic: /p450_3Dlidar_D435i/monocular_down/image_raw
+          Image Topic: /monocular/image_raw
           Max Value: 1
           Median window: 5
           Min Value: 0
@@ -467,4 +468,4 @@ Window Geometry:
     collapsed: false
   Width: 2074
   X: 806
-  Y: 508
+  Y: 471

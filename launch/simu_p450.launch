@@ -9,7 +9,9 @@
 
     <include file="$(find cuadc)/launch/control_p450_indoor.launch"/>
 
-    <node pkg="cuadc" type="main_node" name="main_node" launch-prefix="gnome-terminal --"/>
+<!--    <include file="$(find cuadc)/launch/yolo_v3.launch"/>-->
+
+    <node pkg="cuadc" type="cuadc_node" name="cuadc_node" launch-prefix="gnome-terminal --"/>
 
     <!-- 启动rviz -->
     <node type="rviz" name="rviz" pkg="rviz" args="-d $(find cuadc)/config/CUADC.rviz"/>

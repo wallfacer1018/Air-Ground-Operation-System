@@ -2,7 +2,8 @@
 
 
 ```sh
-catkin_make --source CUADC --build CUADC/build
+catkin_make install --source Modules/darknet_ros --build Modules/darknet_ros/build
+catkin_make install --source CUADC --build CUADC/build
 ```
 
 ```sh
@@ -10,6 +11,10 @@ roslaunch cuadc simu_p450.launch
 ```
 
 ## Release Notes
+
+### [v0.2.2] - 2024-06-25
+
+implement: read image from monocular camera
 
 ### [v0.2.1] - 2024-06-24
 
