@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>cuadc</name>
-  <version>0.2.2</version>
+  <version>0.2.3</version>
   <description>
     CUADC '24
   </description>
@@ -14,6 +14,13 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <depend>mavros_msgs</depend>
+  <depend>cv_bridge</depend>
+  <depend>actionlib</depend>
+  <depend>rospy</depend>
+  <depend>image_transport</depend>
+  <depend>nodelet</depend>
+  <depend>darknet_ros_msgs</depend>
+  <depend>darknet_ros</depend>
   <depend>easondrone_msgs</depend>
 
   <build_depend>message_generation</build_depend>

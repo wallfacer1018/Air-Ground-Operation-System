@@ -9,9 +9,13 @@
 
     <include file="$(find cuadc)/launch/control_p450_indoor.launch"/>
 
-<!--    <include file="$(find cuadc)/launch/yolo_v3.launch"/>-->
+<!--    <include file="$(find usb_cam)/launch/usb_cam-test.launch"/>-->
 
-    <node pkg="cuadc" type="cuadc_node" name="cuadc_node" launch-prefix="gnome-terminal --"/>
+    <include file="$(find cuadc)/launch/visual_infer.launch"/>
+    <include file="$(find cuadc)/launch/darknet_ros.launch"/>
+    <include file="$(find cuadc)/launch/find_object_2d.launch"/>
+
+<!--    <node pkg="cuadc" type="cuadc_node" name="cuadc_node" launch-prefix="gnome-terminal &#45;&#45;"/>-->
 
     <!-- 启动rviz -->
     <node type="rviz" name="rviz" pkg="rviz" args="-d $(find cuadc)/config/CUADC.rviz"/>

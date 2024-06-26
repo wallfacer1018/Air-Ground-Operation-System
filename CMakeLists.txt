@@ -4,6 +4,8 @@ project(cuadc)
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++14)
 
+add_definitions(-DDARKNET_FILE_PATH="$ENV{HOME}/EasonDrone/YOLO/darknet_ros/darknet")
+
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -20,8 +22,23 @@ find_package(catkin REQUIRED COMPONENTS
     tf2_eigen
     tf
         mavros_msgs
+        rospy
+        std_msgs
+        nodelet
+        darknet_ros
+        darknet_ros_msgs
         easondrone_msgs
 )
+
+# Find X11
+message ( STATUS "Searching for X11..." )
+find_package ( X11 REQUIRED )
+if ( X11_FOUND )
+    include_directories ( ${X11_INCLUDE_DIR} )
+    link_libraries ( ${X11_LIBRARIES} )
+    message ( STATUS " X11_INCLUDE_DIR: " ${X11_INCLUDE_DIR} )
+    message ( STATUS " X11_LIBRARIES: " ${X11_LIBRARIES} )
+endif ( X11_FOUND )
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS
@@ -32,7 +49,18 @@ find_package(OpenCV REQUIRED)
 find_package(Eigen3 REQUIRED)
 
 catkin_package(
-   CATKIN_DEPENDS message_runtime std_msgs
+        INCLUDE_DIRS
+            include
+        CATKIN_DEPENDS
+            message_runtime
+            std_msgs
+            cv_bridge
+            roscpp
+            actionlib
+            rospy
+            std_msgs
+            image_transport
+            nodelet
 )
 
 ###########
