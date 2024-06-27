@@ -3,7 +3,7 @@
     <arg name="launch_prefix" default="gnome-terminal --"/>
 
     <!-- load configuration file -->
-    <rosparam command="load" file="$(find cuadc)/config.yaml"/>
+    <rosparam command="load" file="$(find cuadc)/config/config.yaml"/>
 
     <rosparam param="base_path">file://$(find visual_landing_provider)</rosparam>
 

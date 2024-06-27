@@ -29,14 +29,14 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
             ROS_INFO("FSM_EXEC_STATE: TAKE_OFF");
 
             if (!have_odom_) {
-                cout << "[fsm] no odom." << endl;
+                ROS_ERROR("Odom Lost! Take Off Refused!");
                 return;
             }
 
             end_pt_(0) = 0; end_pt_(1) = 0; end_pt_(2) = FLIGHT_HEIGHT;
 
-            if ((odom_pos_ - end_pt_).norm() < 0.2) {
-                cout << "[fsm] close to take off height" << endl;
+            if ((odom_pos_ - end_pt_).norm() < REACH_DIST) {
+                ROS_INFO("Close to take off height.");
                 changeFSMExecState(TO_THROW);
             }
             else {
@@ -68,7 +68,7 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
 
             end_pt_(0) = 32.5; end_pt_(1) = 0; end_pt_(2) = FLIGHT_HEIGHT;
 
-            if ((odom_pos_ - end_pt_).norm() < 0.2) {
+            if ((odom_pos_ - end_pt_).norm() < REACH_DIST) {
                 cout << "[fsm] close to throw area" << endl;
                 changeFSMExecState(THROW);
             }
@@ -105,7 +105,7 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
 
             end_pt_(0) = 57.5; end_pt_(1) = 0; end_pt_(2) = FLIGHT_HEIGHT;
 
-            if ((odom_pos_ - end_pt_).norm() < 0.2) {
+            if ((odom_pos_ - end_pt_).norm() < REACH_DIST) {
                 cout << "[fsm] close to see area" << endl;
                 changeFSMExecState(SEE);
             }
@@ -136,14 +136,15 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
             ROS_INFO("FSM_EXEC_STATE: RETURN");
 
             if (!have_odom_) {
-                cout << "[fsm] no odom." << endl;
+                ROS_ERROR("Odom Lost! Refuse Return!");
                 return;
             }
 
             end_pt_(0) = 0; end_pt_(1) = 0; end_pt_(2) = FLIGHT_HEIGHT;
 
-            if ((odom_pos_ - end_pt_).norm() < 0.2) {
+            if ((odom_pos_ - end_pt_).norm() < REACH_DIST) {
                 cout << "[fsm] close to land area" << endl;
+                land_flag_ = true;
                 changeFSMExecState(LAND);
             }
             else {
@@ -155,7 +156,6 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
                 easondrone_cmd_.Reference_State.position_ref[2] = end_pt_(2);
                 easondrone_cmd_pub_.publish(easondrone_cmd_);
             }
-
             break;
         }
 
@@ -163,10 +163,38 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
             ROS_INFO("FSM_EXEC_STATE: LAND");
 
             if (!have_odom_) {
-                cout << "[fsm] no odom." << endl;
+                ROS_ERROR("Odom Lost! Refuse Land!");
                 return;
             }
 
+            end_pt_(0) = odom_pos_(0) + transform.getOrigin().x() + vital_pose_(0);
+            end_pt_(1) = odom_pos_(1) + transform.getOrigin().y() - vital_pose_(1);
+            end_pt_(2) = 0;
+
+            if ((odom_pos_ - end_pt_).norm() < REACH_DIST) {
+                land_flag_ = false;
+
+                end_pt_(0) = odom_pos_(0);
+                end_pt_(1) = odom_pos_(1);
+
+                cout<< "CLOSE, land at: " << end_pt_.transpose() << endl;
+
+                easondrone_cmd_.header.stamp = ros::Time::now();
+                easondrone_cmd_.Mode = easondrone_msgs::ControlCommand::Land;
+                easondrone_cmd_.Command_ID += 1;
+                easondrone_cmd_pub_.publish(easondrone_cmd_);
+            }
+            else {
+                cout<< "FAR, land at: " << end_pt_.transpose() << endl;
+
+                easondrone_cmd_.header.stamp = ros::Time::now();
+                easondrone_cmd_.Mode = easondrone_msgs::ControlCommand::Move;
+                easondrone_cmd_.Command_ID += 1;
+                easondrone_cmd_.Reference_State.position_ref[0] = end_pt_(0);
+                easondrone_cmd_.Reference_State.position_ref[1] = end_pt_(1);
+                easondrone_cmd_.Reference_State.position_ref[2] = end_pt_(2);
+                easondrone_cmd_pub_.publish(easondrone_cmd_);
+            }
             break;
         }
     }

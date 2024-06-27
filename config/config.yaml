@@ -4,7 +4,7 @@ vis_infer: True
 
 camera:
   resolution: [640, 360]
-  angles: [69.0, 54.0]
+  angles: [155.0, 120.0]
 
 density_estimator:
   path: './data/density_estimator.onnx'
@@ -14,21 +14,21 @@ density_estimator:
 keypoints_detector:
   path: './data/keypoints_detector.onnx'
   onnx_provider: cpu # tensorrt, cuda or cpu
-  conf_thresh: 0.6
+  conf_thresh: 0.3
   std_thresh: 1e-3
 
 rotation_estimator:
   camera_matrix: [
-    [1.44273560e+03, 0.00000000e+00, 320],
-    [0.00000000e+00, 1.44273560e+03, 180],
+    [1.00000000e+00, 0.00000000e+00, 320],
+    [0.00000000e+00, 1.00000000e+00, 180],
     [0.00000000e+00, 0.00000000e+00, 1.00000000e+00]
   ]
   dist_coeffs: [
-    [ 8.94706541e-02, -4.60232377e-02,  7.07396345e-03, -2.76138997e-04, -2.76970285e-01]
+    [ 0, 0,  0, 0, 0]
   ]
   target_real_model: [
     [0.0, 0.0, 0.0], #middle
-    [0.0, -0.227, 0.0], #up
-    [0.204, 0.116, 0.0], #right
-    [-0.204, 0.116, 0.0], #left      
+    [0.0, -0.4, 0.0], #up
+    [0.4, 0.4, 0.0], #right
+    [-0.4, 0.4, 0.0], #left
   ]
