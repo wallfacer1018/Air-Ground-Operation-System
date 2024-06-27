@@ -3,14 +3,22 @@
 	<arg name="launch_prefix" default="gnome-terminal --"/>
     <arg name="gui" default="true"/>
     <arg name="image_topic" default="/monocular/image_raw"/>
-    <arg name="objects_path" default="~/objects"/>
-    <arg name="settings_path" default="~/.ros/find_object_2d.ini"/>
+    <arg name="objects_path" default="$(find cuadc)/config"/>
+    <arg name="settings_path" default="$(find cuadc)/config/find_object_2d.ini"/>
 
 	<!-- Nodes -->
-	<node name="find_object_2d" pkg="find_object_2d" type="find_object_2d" output="screen" launch-prefix="$(arg launch_prefix)">
+	<node name="find_object_2d" pkg="find_object_2d" type="find_object_2d"
+		  output="screen" launch-prefix="$(arg launch_prefix)">
 		<remap from="image" to="$(arg image_topic)"/>
 		<param name="gui" value="$(arg gui)" type="bool"/>
 		<param name="objects_path" value="$(arg objects_path)" type="str"/>
 		<param name="settings_path" value="$(arg settings_path)" type="str"/>
 	</node>
+
+	<node name="print_objects_detected" pkg="find_object_2d" type="print_objects_detected"
+		  output="screen" launch-prefix="$(arg launch_prefix)">
+		<remap from="image" to="$(arg image_topic)"/>
+	</node>
+
+	<node pkg="rqt_image_view" type="rqt_image_view" name="rqt_image_view" args="/image_with_objects"/>
 </launch>

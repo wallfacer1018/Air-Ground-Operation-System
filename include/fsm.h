@@ -26,11 +26,14 @@
 #include <mavros_msgs/State.h>
 #include <mavros_msgs/PositionTarget.h>
 #include <geographic_msgs/GeoPointStamped.h>
+#include <find_object_2d/ObjectsStamped.h>
 #include <easondrone_msgs/ControlCommand.h>
 
 #define NODE_NAME "cuadc_node"
-#define FLIGHT_HEIGHT 4.0
+#define FLIGHT_HEIGHT 0.3
 #define REACH_DIST 0.2
+#define IMG_W 640
+#define IMG_H 480
 
 using namespace std;
 
@@ -66,10 +69,13 @@ private:
     easondrone_msgs::ControlCommand easondrone_cmd_;
     bool land_flag_;
     tf::StampedTransform transform;
-    Eigen::Vector3d vital_pose_;
+
+    Eigen::Vector2d vital_pose_;
+    find_object_2d::ObjectsStamped find_object_;
+    Eigen::Vector2d object_pixel_;
 
     ros::Timer gp_origin_timer_, exec_timer_;
-    ros::Subscriber state_sub, odom_sub_, vital_sub_;
+    ros::Subscriber state_sub, odom_sub_, vital_sub_, find_object_sub_;
     ros::Publisher gp_origin_pub, local_pos_pub, easondrone_cmd_pub_;
     ros::ServiceClient set_mode_client, arming_client;
     tf::TransformListener tf_listener_;
@@ -115,9 +121,18 @@ private:
 
         vital_pose_(0) = msg->position.x;
         vital_pose_(1) = msg->position.y;
-        vital_pose_(2) = msg->position.z;
 
         cout << "vital: " << vital_pose_.transpose() << endl;
+    }
+
+    inline void findObjectCallback(const find_object_2d::ObjectsStamped::ConstPtr &msg){
+        if(msg->objects.data.size()){
+            find_object_ = *msg;
+
+            object_pixel_(0) = find_object_.objects.data[10] - IMG_H/2;
+            object_pixel_(1) = find_object_.objects.data[9] - IMG_W/2;
+            cout << "object: " << object_pixel_.transpose() << endl;
+        }
     }
 
 public:
@@ -137,6 +152,8 @@ public:
                 ("/mavros/local_position/odom", 10, &FSM::odometryCallback, this);
         vital_sub_ = nh.subscribe<geometry_msgs::Pose>
                 ("/visual_infer/pose", 10, &FSM::vitalCallback, this);
+        find_object_sub_ = nh.subscribe<find_object_2d::ObjectsStamped>
+                ("/objectsStamped", 10, &FSM::findObjectCallback, this);
 
         gp_origin_pub = nh.advertise<geographic_msgs::GeoPointStamped>
                 ("/mavros/global_position/gp_origin", 10);

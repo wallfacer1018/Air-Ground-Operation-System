@@ -1,5 +1,16 @@
 # CUADC
 
+## Introduction
+
+- VITAL
+  - ONLY fit for authors' own landing pad style
+- find_object_2d
+  - ONLY fit for specific height and angle
+- YOLO
+  - TODO
+  
+
+## Installation & Launch
 
 ```sh
 catkin_make install --source CUADC --build CUADC/build
@@ -9,7 +20,12 @@ catkin_make install --source CUADC --build CUADC/build
 roslaunch cuadc simu_p450.launch
 ```
 
+
 ## Release Notes
+
+### [v0.2.4] - 2024-06-27
+
+implement: detect landing_pad via find_object_2d
 
 ### [v0.3.0] - 2024-06-27
 

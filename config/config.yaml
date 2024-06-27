@@ -3,7 +3,7 @@ mavros_altitude_topic: /mavros/local_position/odom
 vis_infer: True
 
 camera:
-  resolution: [640, 360]
+  resolution: [640, 480]
   angles: [155.0, 120.0]
 
 density_estimator:
@@ -20,7 +20,7 @@ keypoints_detector:
 rotation_estimator:
   camera_matrix: [
     [1.00000000e+00, 0.00000000e+00, 320],
-    [0.00000000e+00, 1.00000000e+00, 180],
+    [0.00000000e+00, 1.00000000e+00, 240],
     [0.00000000e+00, 0.00000000e+00, 1.00000000e+00]
   ]
   dist_coeffs: [

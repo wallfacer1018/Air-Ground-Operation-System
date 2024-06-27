@@ -61,11 +61,6 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
         case TO_THROW:{
             ROS_INFO("FSM_EXEC_STATE: TO_THROW");
 
-            if (!have_odom_) {
-                cout << "[fsm] no odom." << endl;
-                return;
-            }
-
             end_pt_(0) = 32.5; end_pt_(1) = 0; end_pt_(2) = FLIGHT_HEIGHT;
 
             if ((odom_pos_ - end_pt_).norm() < REACH_DIST) {
@@ -87,21 +82,11 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
         case THROW: {
             ROS_INFO("FSM_EXEC_STATE: THROW");
 
-            if (!have_odom_) {
-                cout << "[fsm] no odom." << endl;
-                return;
-            }
-
             break;
         }
 
         case TO_SEE: {
             ROS_INFO("FSM_EXEC_STATE: TO_SEE");
-
-            if (!have_odom_) {
-                cout << "[fsm] no odom." << endl;
-                return;
-            }
 
             end_pt_(0) = 57.5; end_pt_(1) = 0; end_pt_(2) = FLIGHT_HEIGHT;
 
@@ -124,21 +109,11 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
         case SEE: {
             ROS_INFO("FSM_EXEC_STATE: ERROR");
 
-            if (!have_odom_) {
-                cout << "[fsm] no odom." << endl;
-                return;
-            }
-
             break;
         }
 
         case RETURN: {
             ROS_INFO("FSM_EXEC_STATE: RETURN");
-
-            if (!have_odom_) {
-                ROS_ERROR("Odom Lost! Refuse Return!");
-                return;
-            }
 
             end_pt_(0) = 0; end_pt_(1) = 0; end_pt_(2) = FLIGHT_HEIGHT;
 
@@ -161,11 +136,6 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
 
         case LAND: {
             ROS_INFO("FSM_EXEC_STATE: LAND");
-
-            if (!have_odom_) {
-                ROS_ERROR("Odom Lost! Refuse Land!");
-                return;
-            }
 
             end_pt_(0) = odom_pos_(0) + transform.getOrigin().x() + vital_pose_(0);
             end_pt_(1) = odom_pos_(1) + transform.getOrigin().y() - vital_pose_(1);
