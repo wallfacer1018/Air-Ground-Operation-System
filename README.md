@@ -11,6 +11,10 @@ roslaunch cuadc simu_p450.launch
 
 ## Release Notes
 
+### [v0.3.0] - 2024-06-27
+
+implement: autonomous landing via VITAL
+
 ### [v0.2.3] - 2024-06-26
 
 implement: detect landing_pad via VITAL
