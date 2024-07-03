@@ -23,6 +23,10 @@ roslaunch cuadc simu_p450.launch
 
 ## Release Notes
 
+### [v0.2.5] - 2024-07-03
+
+implement: detect landing_pad via YOLOv2
+
 ### [v0.2.4] - 2024-06-27
 
 implement: detect landing_pad via find_object_2d

@@ -8,6 +8,7 @@
 #include <Eigen/Eigen>
 #include <ros/ros.h>
 #include <iostream>
+#include <cmath>
 #include <tf/transform_listener.h>
 #include <tf/transform_datatypes.h>
 // opencv头文件
@@ -27,6 +28,9 @@
 #include <mavros_msgs/PositionTarget.h>
 #include <geographic_msgs/GeoPointStamped.h>
 #include <find_object_2d/ObjectsStamped.h>
+#include <darknet_ros_msgs/BoundingBox.h>
+#include <darknet_ros_msgs/BoundingBoxes.h>
+#include <darknet_ros_msgs/CheckForObjectsResult.h>
 #include <easondrone_msgs/ControlCommand.h>
 
 #define NODE_NAME "cuadc_node"
@@ -67,15 +71,16 @@ private:
     mavros_msgs::PositionTarget pose_cmd;
     //即将发布的command
     easondrone_msgs::ControlCommand easondrone_cmd_;
-    bool land_flag_;
+    bool throw_flag_, land_flag_;
     tf::StampedTransform transform;
 
+    bool detectedBucket_, detectedPad_;
     Eigen::Vector2d vital_pose_;
-    find_object_2d::ObjectsStamped find_object_;
     Eigen::Vector2d object_pixel_;
+    Eigen::Vector2d center_pad_;
 
     ros::Timer gp_origin_timer_, exec_timer_;
-    ros::Subscriber state_sub, odom_sub_, vital_sub_, find_object_sub_;
+    ros::Subscriber state_sub, odom_sub_, vital_sub_, find_object_sub_, yolo_sub_;
     ros::Publisher gp_origin_pub, local_pos_pub, easondrone_cmd_pub_;
     ros::ServiceClient set_mode_client, arming_client;
     tf::TransformListener tf_listener_;
@@ -127,11 +132,69 @@ private:
 
     inline void findObjectCallback(const find_object_2d::ObjectsStamped::ConstPtr &msg){
         if(msg->objects.data.size()){
-            find_object_ = *msg;
-
-            object_pixel_(0) = find_object_.objects.data[10] - IMG_H/2;
-            object_pixel_(1) = find_object_.objects.data[9] - IMG_W/2;
+            object_pixel_(0) = msg->objects.data[10] - IMG_H/2;
+            object_pixel_(1) = msg->objects.data[9] - IMG_W/2;
             cout << "object: " << object_pixel_.transpose() << endl;
+        }
+    }
+
+    inline void yoloCallback(const darknet_ros_msgs::BoundingBoxes::ConstPtr &msg){
+        cout << "------------------ YOLO ------------------" << endl;
+
+        switch (exec_state_) {
+            case THROW: {
+
+                break;
+            }
+
+            case LAND: {
+                double ratio_ = 1.0;
+
+                for (int cnt_ = 0; cnt_ < (msg->bounding_boxes).size(); cnt_++) {
+                    darknet_ros_msgs::BoundingBox boundingBox = msg->bounding_boxes[cnt_];
+
+                    if (boundingBox.Class == "landing_pad") {
+                        int x_range_ = boundingBox.xmax - boundingBox.xmin;
+                        int y_range_ = boundingBox.ymax - boundingBox.ymin;
+
+                        if (cnt_ == 0){
+                            center_pad_(0) = boundingBox.xmin + x_range_/2 - IMG_W/2;
+                            center_pad_(1) = boundingBox.ymin + y_range_/2 - IMG_H/2;
+
+                            ratio_ = abs(x_range_ - y_range_)/double(x_range_ + y_range_);
+
+                            cout << "INIT   centerErrorPad: " << center_pad_.transpose() << ", ratio: " << ratio_ << endl;
+                        }
+                        else if (cnt_ > 0){
+                            Eigen::Vector2d center_pad_temp(boundingBox.xmin + x_range_/2 - IMG_W/2,
+                                                            boundingBox.ymin + y_range_/2 - IMG_H/2);
+
+                            double ratio_temp = abs(x_range_ - y_range_)/double(x_range_ + y_range_);
+
+                            if (ratio_temp < ratio_){
+                                center_pad_ = center_pad_temp;
+                                ratio_ = ratio_temp;
+
+                                cout << "BETTER centerErrorPad[" << cnt_ << "]: " << center_pad_.transpose() << ", ratio: " << ratio_ << endl;
+                            }
+                            else{
+                                cout << "WORSE  centerErrorPad[" << cnt_ << "]: " << center_pad_temp.transpose() << ", ratio: " << ratio_temp << endl;
+                            }
+                        }
+
+                    }
+                    else{
+                        cout << "NOT a landing_pad!" << endl;
+                    }
+                }
+                cout << "FINAL  centerErrorPad: " << center_pad_.transpose() << ", ratio: " << ratio_ << endl;
+
+                break;
+            }
+
+            default:{
+                return;
+            }
         }
     }
 
@@ -154,6 +217,8 @@ public:
                 ("/visual_infer/pose", 10, &FSM::vitalCallback, this);
         find_object_sub_ = nh.subscribe<find_object_2d::ObjectsStamped>
                 ("/objectsStamped", 10, &FSM::findObjectCallback, this);
+        yolo_sub_ = nh.subscribe<darknet_ros_msgs::BoundingBoxes>
+                ("/darknet_ros/bounding_boxes", 10, &FSM::yoloCallback, this);
 
         gp_origin_pub = nh.advertise<geographic_msgs::GeoPointStamped>
                 ("/mavros/global_position/gp_origin", 10);
@@ -181,6 +246,9 @@ public:
         }
 
         /******* init ********/
+        //setprecision(n) 设显示小数精度为n位
+        cout << setprecision(4);
+
         have_odom_ = false;
 
         gp_origin.header.stamp = ros::Time::now();
@@ -221,7 +289,11 @@ public:
         easondrone_cmd_.Reference_State.Move_mode = easondrone_msgs::PositionReference::XYZ_POS;
         easondrone_cmd_.Reference_State.Move_frame = easondrone_msgs::PositionReference::ENU_FRAME;
 
+        throw_flag_ = false;
         land_flag_ = false;
+
+        detectedBucket_ = false;
+        detectedPad_ = false;
 
         ROS_INFO("FSM initialized.");
     };
