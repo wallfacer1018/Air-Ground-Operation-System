@@ -33,7 +33,7 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
                 return;
             }
 
-            end_pt_(0) = 0; end_pt_(1) = 0; end_pt_(2) = FLIGHT_HEIGHT;
+            end_pt_ << 0.0, 0.0, FLIGHT_HEIGHT;
 
             if ((odom_pos_ - end_pt_).norm() < REACH_DIST) {
                 ROS_INFO("Close to take off height.");
@@ -61,7 +61,7 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
         case TO_THROW:{
             ROS_INFO("FSM_EXEC_STATE: TO_THROW");
 
-            end_pt_(0) = 32.5; end_pt_(1) = 0; end_pt_(2) = FLIGHT_HEIGHT;
+            end_pt_ << 32.5, 0.0, FLIGHT_HEIGHT;
 
             if ((odom_pos_ - end_pt_).norm() < REACH_DIST) {
                 cout << "[fsm] close to throw area" << endl;
@@ -84,13 +84,15 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
 
             throw_flag_ = false;
 
+            //TODO:
+
             break;
         }
 
         case TO_SEE: {
             ROS_INFO("FSM_EXEC_STATE: TO_SEE");
 
-            end_pt_(0) = 57.5; end_pt_(1) = 0; end_pt_(2) = FLIGHT_HEIGHT;
+            end_pt_ << 57.5, 0.0, FLIGHT_HEIGHT;
 
             if ((odom_pos_ - end_pt_).norm() < REACH_DIST) {
                 cout << "[fsm] close to see area" << endl;
@@ -111,13 +113,15 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
         case SEE: {
             ROS_INFO("FSM_EXEC_STATE: ERROR");
 
+            // TODO:
+
             break;
         }
 
         case RETURN: {
             ROS_INFO("FSM_EXEC_STATE: RETURN");
 
-            end_pt_(0) = 0; end_pt_(1) = 0; end_pt_(2) = FLIGHT_HEIGHT;
+            end_pt_ << 0.0, 0.0, FLIGHT_HEIGHT;
 
             if ((odom_pos_ - end_pt_).norm() < REACH_DIST) {
                 cout << "[fsm] close to land area" << endl;
@@ -139,9 +143,9 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
         case LAND: {
             ROS_INFO("FSM_EXEC_STATE: LAND");
 
-            end_pt_(0) = odom_pos_(0) + transform.getOrigin().x() + vital_pose_(0);
-            end_pt_(1) = odom_pos_(1) + transform.getOrigin().y() - vital_pose_(1);
-            end_pt_(2) = 0;
+            end_pt_ << odom_pos_(0) + transform.getOrigin().x() + vital_pose_(0),
+                       odom_pos_(1) + transform.getOrigin().y() - vital_pose_(1),
+                       0.0;
 
             if ((odom_pos_ - end_pt_).norm() < REACH_DIST) {
                 land_flag_ = false;
@@ -175,8 +179,19 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
 void FSM::yoloCallback(const darknet_ros_msgs::BoundingBoxes::ConstPtr &msg){
     cout << "------------------ YOLO ------------------" << endl;
 
+    //监听包装在一个try-catch块中以捕获可能的异常
+    try{
+        //向侦听器查询特定的转换，(想得到/world到/monocular的变换)，想要转换的时间ros::Time(0)提供了最新的可用转换。
+        tf_listener_.lookupTransform("world", "monocular_link", ros::Time(0), transform);
+    }
+    catch (tf::TransformException &ex) {
+        ROS_WARN("%s",ex.what());
+    }
+
     switch (exec_state_) {
         case THROW: {
+
+            // TODO:
 
             break;
         }
@@ -188,28 +203,30 @@ void FSM::yoloCallback(const darknet_ros_msgs::BoundingBoxes::ConstPtr &msg){
                 darknet_ros_msgs::BoundingBox boundingBox = msg->bounding_boxes[cnt_];
 
                 if (boundingBox.Class == "landing_pad") {
-                    int x_range_ = boundingBox.xmax - boundingBox.xmin;
-                    int y_range_ = boundingBox.ymax - boundingBox.ymin;
+                    Eigen::Vector2d center_pixel_pad_((boundingBox.xmin + boundingBox.xmax)/2,
+                                                      (boundingBox.ymin + boundingBox.ymax)/2);
+                    Eigen::Vector2d range_pixel_pad_(boundingBox.xmax - boundingBox.xmin,
+                                                     boundingBox.ymax - boundingBox.ymin);
 
                     if (cnt_ == 0){
-                        center_pad_(0) = boundingBox.xmin + x_range_/2 - IMG_W/2;
-                        center_pad_(1) = boundingBox.ymin + y_range_/2 - IMG_H/2;
+                        centerErrorPad_ << center_pixel_pad_(0) - cx,
+                                           center_pixel_pad_(1) - cy;
 
-                        ratio_ = abs(x_range_ - y_range_)/double(x_range_ + y_range_);
+                        ratio_ = abs(range_pixel_pad_(0) - range_pixel_pad_(1))/double(range_pixel_pad_(0) + range_pixel_pad_(1));
 
-                        cout << "INIT   centerErrorPad: " << center_pad_.transpose() << ", ratio: " << ratio_ << endl;
+                        cout << "INIT   centerErrorPad: " << centerErrorPad_.transpose() << ", ratio: " << ratio_ << endl;
                     }
-                    else if (cnt_ > 0){
-                        Eigen::Vector2d center_pad_temp(boundingBox.xmin + x_range_/2 - IMG_W/2,
-                                                        boundingBox.ymin + y_range_/2 - IMG_H/2);
+                    else{
+                        Eigen::Vector2d center_pad_temp(center_pixel_pad_(0) - cx,
+                                                        center_pixel_pad_(1) - cy);
 
-                        double ratio_temp = abs(x_range_ - y_range_)/double(x_range_ + y_range_);
+                        double ratio_temp = abs(range_pixel_pad_(0) - range_pixel_pad_(1))/double(range_pixel_pad_(0) + range_pixel_pad_(1));
 
                         if (ratio_temp < ratio_){
-                            center_pad_ = center_pad_temp;
+                            centerErrorPad_ = center_pad_temp;
                             ratio_ = ratio_temp;
 
-                            cout << "BETTER centerErrorPad[" << cnt_ << "]: " << center_pad_.transpose() << ", ratio: " << ratio_ << endl;
+                            cout << "BETTER centerErrorPad[" << cnt_ << "]: " << centerErrorPad_.transpose() << ", ratio: " << ratio_ << endl;
                         }
                         else{
                             cout << "WORSE  centerErrorPad[" << cnt_ << "]: " << center_pad_temp.transpose() << ", ratio: " << ratio_temp << endl;
@@ -220,7 +237,15 @@ void FSM::yoloCallback(const darknet_ros_msgs::BoundingBoxes::ConstPtr &msg){
                     cout << "NOT a landing_pad!" << endl;
                 }
             }
-            cout << "FINAL  centerErrorPad: " << center_pad_.transpose() << ", ratio: " << ratio_ << endl;
+
+            cout << "FINAL  centerErrorPad: " << centerErrorPad_.transpose() << ", ratio: " << ratio_ << endl;
+
+            // Convert the pixel frame point to world frame
+            pose_pad_ = transform * tf::Vector3(centerErrorPad_(0) / cx * odom_pos_(2),
+                                                centerErrorPad_(1) / cy * odom_pos_(2),
+                                                0.0);
+
+            cout << "pose_pad: " << pose_pad_.x()-0.1 << " " << pose_pad_.y() << " " << pose_pad_.z() << endl;
 
             break;
         }
@@ -248,6 +273,8 @@ void FSM::init(ros::NodeHandle &nh){
             ("/objectsStamped", 10, &FSM::findObjectCallback, this);
     yolo_sub_ = nh.subscribe<darknet_ros_msgs::BoundingBoxes>
             ("/darknet_ros/bounding_boxes", 10, &FSM::yoloCallback, this);
+    camera_info_sub_ = nh.subscribe
+            ("/monocular/camera_info", 1, &FSM::cameraInfoCallback, this);
 
     gp_origin_pub = nh.advertise<geographic_msgs::GeoPointStamped>
             ("/mavros/global_position/gp_origin", 10);
@@ -264,15 +291,6 @@ void FSM::init(ros::NodeHandle &nh){
     // 【服务】修改系统模式 本服务通过Mavros功能包 /plugins/command.cpp 实现
     set_mode_client = nh.serviceClient<mavros_msgs::SetMode>
             ("/mavros/set_mode");
-
-    //监听包装在一个try-catch块中以捕获可能的异常
-    try{
-        //向侦听器查询特定的转换，(想得到/turtle1到/turtle2的变换)，想要转换的时间ros::Time(0)提供了最新的可用转换。
-        tf_listener_.lookupTransform("base_link", "monocular_link", ros::Time(0), transform);
-    }
-    catch (tf::TransformException &ex) {
-        ROS_ERROR("%s",ex.what());
-    }
 
     /******* init ********/
     //setprecision(n) 设显示小数精度为n位

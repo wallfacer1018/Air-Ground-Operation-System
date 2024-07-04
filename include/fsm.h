@@ -6,22 +6,28 @@
 #define CUADC_FSM_H
 
 #include <Eigen/Eigen>
+#include <Eigen/Dense>
 #include <ros/ros.h>
 #include <iostream>
 #include <cmath>
+
 #include <tf/transform_listener.h>
 #include <tf/transform_datatypes.h>
+
 // opencv头文件
+#include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/core/eigen.hpp>
+
 // topic 头文件
 #include <std_msgs/Header.h>
 #include <nav_msgs/Odometry.h>
 #include <nav_msgs/Path.h>
 #include <sensor_msgs/Image.h>
+#include <sensor_msgs/CameraInfo.h>
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/CommandBool.h>
 #include <mavros_msgs/State.h>
@@ -31,13 +37,16 @@
 #include <darknet_ros_msgs/BoundingBox.h>
 #include <darknet_ros_msgs/BoundingBoxes.h>
 #include <darknet_ros_msgs/CheckForObjectsResult.h>
+
 #include <easondrone_msgs/ControlCommand.h>
 
 #define NODE_NAME "cuadc_node"
 #define FLIGHT_HEIGHT 0.3
 #define REACH_DIST 0.2
-#define IMG_W 640
-#define IMG_H 480
+#define cx 321.04638671875
+#define cy 243.44969177246094
+#define fx 369.502083
+#define fy 369.502083
 
 using namespace std;
 
@@ -74,13 +83,16 @@ private:
     bool throw_flag_, land_flag_;
     tf::StampedTransform transform;
 
+    int IMG_W, IMG_H;
+    cv::Mat camera_intrinsics_;
     bool detectedBucket_, detectedPad_;
     Eigen::Vector2d vital_pose_;
     Eigen::Vector2d object_pixel_;
-    Eigen::Vector2d center_pad_;
+    Eigen::Vector2d centerErrorPad_;
+    tf::Vector3 pose_pad_;
 
     ros::Timer gp_origin_timer_, exec_timer_;
-    ros::Subscriber state_sub, odom_sub_, vital_sub_, find_object_sub_, yolo_sub_;
+    ros::Subscriber state_sub, odom_sub_, camera_info_sub_, vital_sub_, find_object_sub_, yolo_sub_;
     ros::Publisher gp_origin_pub, local_pos_pub, easondrone_cmd_pub_;
     ros::ServiceClient set_mode_client, arming_client;
     tf::TransformListener tf_listener_;
@@ -101,13 +113,13 @@ private:
 
     // 保存无人机当前里程计信息，包括位置、速度和姿态
     inline void odometryCallback(const nav_msgs::OdometryConstPtr &msg){
-        odom_pos_(0) = msg->pose.pose.position.x;
-        odom_pos_(1) = msg->pose.pose.position.y;
-        odom_pos_(2) = msg->pose.pose.position.z;
+        odom_pos_ << msg->pose.pose.position.x,
+                     msg->pose.pose.position.y,
+                     msg->pose.pose.position.z;
 
-        odom_vel_(0) = msg->twist.twist.linear.x;
-        odom_vel_(1) = msg->twist.twist.linear.y;
-        odom_vel_(2) = msg->twist.twist.linear.z;
+        odom_vel_ << msg->twist.twist.linear.x,
+                     msg->twist.twist.linear.y,
+                     msg->twist.twist.linear.z;
 
         //odom_acc_ = estimateAcc( msg );
 
@@ -119,21 +131,34 @@ private:
         have_odom_ = true;
     }
 
+    void cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg) {
+        // TODO: actually, these two parameters should be replaced by cx & cy
+        IMG_W = msg->width;
+        IMG_H = msg->height;
+
+        // Save the camera calibration parameters
+        camera_intrinsics_ = cv::Mat(3, 3, CV_64F);
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 3; ++j) {
+                camera_intrinsics_.at<double>(i, j) = msg->K[i*3 + j];
+            }
+        }
+    }
+
     inline void vitalCallback(const geometry_msgs::Pose::ConstPtr &msg) {
         if(land_flag_){
             return;
         }
 
-        vital_pose_(0) = msg->position.x;
-        vital_pose_(1) = msg->position.y;
+        vital_pose_ << msg->position.x, msg->position.y;
 
         cout << "vital: " << vital_pose_.transpose() << endl;
     }
 
     inline void findObjectCallback(const find_object_2d::ObjectsStamped::ConstPtr &msg){
         if(msg->objects.data.size()){
-            object_pixel_(0) = msg->objects.data[10] - IMG_H/2;
-            object_pixel_(1) = msg->objects.data[9] - IMG_W/2;
+            object_pixel_(0) = msg->objects.data[10] - cy;
+            object_pixel_(1) = msg->objects.data[9] - cx;
             cout << "object: " << object_pixel_.transpose() << endl;
         }
     }

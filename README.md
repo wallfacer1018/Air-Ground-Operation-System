@@ -23,6 +23,10 @@ roslaunch cuadc simu_p450.launch
 
 ## Release Notes
 
+### [v0.2.6] - 2024-07-04
+
+implement: get global position of landing_pad from pixel frame
+
 ### [v0.2.5] - 2024-07-03
 
 implement: detect landing_pad via YOLOv2

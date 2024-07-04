@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>cuadc</name>
-  <version>0.2.5</version>
+  <version>0.2.6</version>
   <description>
     CUADC '24
   </description>
@@ -13,6 +13,7 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
+  <depend>roscpp</depend>
   <depend>mavros_msgs</depend>
   <depend>cv_bridge</depend>
   <depend>actionlib</depend>
@@ -22,18 +23,5 @@
   <depend>darknet_ros_msgs</depend>
   <depend>darknet_ros</depend>
   <depend>easondrone_msgs</depend>
-
-  <build_depend>message_generation</build_depend>
-  <build_depend>rosconsole</build_depend>
-  <build_depend>roscpp</build_depend>
-  <build_depend>roscpp_serialization</build_depend>
-  <build_depend>rostime</build_depend>
-  <build_depend>std_msgs</build_depend>
-
-  <exec_depend>message_runtime</exec_depend>
-  <exec_depend>rosconsole</exec_depend>
-  <exec_depend>roscpp</exec_depend>
-  <exec_depend>roscpp_serialization</exec_depend>
-  <exec_depend>rostime</exec_depend>
-  <exec_depend>std_msgs</exec_depend>
+  <depend>std_msgs</depend>
 </package>
