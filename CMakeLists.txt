@@ -76,10 +76,6 @@ include_directories(
         $ENV{HOME}/EasonDrone/Modules/common/include
 )
 
-#add_executable(landing
-#        src/autonomous_landing.cpp
-#)
-
 add_executable(cuadc_node
         src/cuadc_node.cpp
         src/fsm.cpp
