@@ -2,6 +2,7 @@ import A_star_v2
 import uwb_kalman
 import numpy as np
 import time
+import serial
 
 
 # 串口通信，告知stm32小车左轮和右轮的速度
@@ -82,10 +83,10 @@ def move_to(p1, p2):
 
 
 if __name__ == '__main__':
-    # ser = serial.Serial('/dev/ttyAMA2', 115200)  # 打开串口设备
-    # if not ser.isOpen:
-    #     ser.open()
-    # print('serial opened')
+    ser = serial.Serial('/dev/ttyAMA2', 115200)  # 打开串口设备
+    if not ser.isOpen:
+        ser.open()
+    print('serial opened')
 
     # 建立地图，找到path
     points = [(170, 80), (340, 80), (30, 90),
@@ -124,4 +125,4 @@ if __name__ == '__main__':
 
     print('process finished')
 
-    # ser.close()
+    ser.close()
