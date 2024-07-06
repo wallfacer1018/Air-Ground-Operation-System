@@ -143,9 +143,7 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
         case LAND: {
             ROS_INFO("FSM_EXEC_STATE: LAND");
 
-            end_pt_ << odom_pos_(0) + transform.getOrigin().x() + vital_pose_(0),
-                       odom_pos_(1) + transform.getOrigin().y() - vital_pose_(1),
-                       0.0;
+            end_pt_ = pose_pad_;
 
             if ((odom_pos_ - end_pt_).norm() < REACH_DIST) {
                 land_flag_ = false;
@@ -241,11 +239,12 @@ void FSM::yoloCallback(const darknet_ros_msgs::BoundingBoxes::ConstPtr &msg){
             cout << "FINAL  centerErrorPad: " << centerErrorPad_.transpose() << ", ratio: " << ratio_ << endl;
 
             // Convert the pixel frame point to world frame
-            pose_pad_ = transform * tf::Vector3(centerErrorPad_(0) / cx * odom_pos_(2),
+            pose_pad_vec_ = transform * tf::Vector3(centerErrorPad_(0) / cx * odom_pos_(2),
                                                 centerErrorPad_(1) / cy * odom_pos_(2),
                                                 0.0);
+            pose_pad_ << pose_pad_vec_.x()-0.1, pose_pad_.y(), 0.0;
 
-            cout << "pose_pad: " << pose_pad_.x()-0.1 << " " << pose_pad_.y() << " " << pose_pad_.z() << endl;
+            cout << "pose_pad: " << pose_pad_.transpose() << endl;
 
             break;
         }

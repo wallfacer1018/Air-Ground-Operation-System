@@ -89,7 +89,8 @@ private:
     Eigen::Vector2d vital_pose_;
     Eigen::Vector2d object_pixel_;
     Eigen::Vector2d centerErrorPad_;
-    tf::Vector3 pose_pad_;
+    tf::Vector3 pose_pad_vec_;
+    Eigen::Vector3d pose_pad_;
 
     ros::Timer gp_origin_timer_, exec_timer_;
     ros::Subscriber state_sub, odom_sub_, camera_info_sub_, vital_sub_, find_object_sub_, yolo_sub_;
