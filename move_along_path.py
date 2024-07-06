@@ -14,22 +14,26 @@ import time
 def set_vel(vl, vr):
     vl_hex = f'3{vl:03X}'.encode('utf-8')  # 将速度设置为16进制编码
     vr_hex = f'4{vr:03X}'.encode('utf-8')  # 将速度设置为16进制编码
-    # ser.write(vl_hex)
-    # ser.write(vr_hex)
-    # ser.write(b'5000')  # 命令小车前行
+    ser.write(b'aaaa')  # 起始校验位
+    ser.write(vl_hex)
+    ser.write(vr_hex)
+    ser.write(b'5000')  # 命令小车前行
+    ser.write(b'ffff')  # 结束校验位
     print(f"Setting velocities: Left = {vl}, Right = {vr}")
     return
 
 def turn(angle):
     angle_abs = int(abs(angle))
-    speed_mode = 1  # 假设速度模式为1
+    speed_mode = 56
+    # 假设速度模式为1
 
     if angle > 0:  # 左转
         command = f'1{speed_mode}{angle_abs:02X}'.encode('utf-8')
     elif angle < 0:  # 右转
         command = f'2{speed_mode}{angle_abs:02X}'.encode('utf-8')
-
-    # ser.write(command)
+    ser.write(b'aaaa')  # 起始校验位
+    ser.write(command)
+    ser.write(b'ffff') # 结束校验位
     print(f"Turning by {angle} degrees")
     return
 
