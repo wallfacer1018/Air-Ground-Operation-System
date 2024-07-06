@@ -266,10 +266,6 @@ void FSM::init(ros::NodeHandle &nh){
             ("/mavros/state", 10, &FSM::state_cb, this);
     odom_sub_ = nh.subscribe
             ("/mavros/local_position/odom", 10, &FSM::odometryCallback, this);
-    vital_sub_ = nh.subscribe<geometry_msgs::Pose>
-            ("/visual_infer/pose", 10, &FSM::vitalCallback, this);
-    find_object_sub_ = nh.subscribe<find_object_2d::ObjectsStamped>
-            ("/objectsStamped", 10, &FSM::findObjectCallback, this);
     yolo_sub_ = nh.subscribe<darknet_ros_msgs::BoundingBoxes>
             ("/darknet_ros/bounding_boxes", 10, &FSM::yoloCallback, this);
     camera_info_sub_ = nh.subscribe
@@ -337,9 +333,6 @@ void FSM::init(ros::NodeHandle &nh){
 
     throw_flag_ = false;
     land_flag_ = false;
-
-    detectedBucket_ = false;
-    detectedPad_ = false;
 
     ROS_INFO("FSM initialized.");
 };

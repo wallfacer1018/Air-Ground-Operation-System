@@ -85,15 +85,12 @@ private:
 
     int IMG_W, IMG_H;
     cv::Mat camera_intrinsics_;
-    bool detectedBucket_, detectedPad_;
-    Eigen::Vector2d vital_pose_;
-    Eigen::Vector2d object_pixel_;
     Eigen::Vector2d centerErrorPad_;
     tf::Vector3 pose_pad_vec_;
     Eigen::Vector3d pose_pad_;
 
     ros::Timer gp_origin_timer_, exec_timer_;
-    ros::Subscriber state_sub, odom_sub_, camera_info_sub_, vital_sub_, find_object_sub_, yolo_sub_;
+    ros::Subscriber state_sub, odom_sub_, camera_info_sub_, yolo_sub_;
     ros::Publisher gp_origin_pub, local_pos_pub, easondrone_cmd_pub_;
     ros::ServiceClient set_mode_client, arming_client;
     tf::TransformListener tf_listener_;
@@ -143,24 +140,6 @@ private:
             for (int j = 0; j < 3; ++j) {
                 camera_intrinsics_.at<double>(i, j) = msg->K[i*3 + j];
             }
-        }
-    }
-
-    inline void vitalCallback(const geometry_msgs::Pose::ConstPtr &msg) {
-        if(land_flag_){
-            return;
-        }
-
-        vital_pose_ << msg->position.x, msg->position.y;
-
-        cout << "vital: " << vital_pose_.transpose() << endl;
-    }
-
-    inline void findObjectCallback(const find_object_2d::ObjectsStamped::ConstPtr &msg){
-        if(msg->objects.data.size()){
-            object_pixel_(0) = msg->objects.data[10] - cy;
-            object_pixel_(1) = msg->objects.data[9] - cx;
-            cout << "object: " << object_pixel_.transpose() << endl;
         }
     }
 

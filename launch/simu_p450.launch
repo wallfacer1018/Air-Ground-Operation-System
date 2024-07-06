@@ -10,8 +10,6 @@
     <include file="$(find cuadc)/launch/control_p450_indoor.launch"/>
 
     <include file="$(find cuadc)/launch/darknet_ros.launch"/>
-<!--    <include file="$(find cuadc)/launch/visual_infer.launch"/>-->
-<!--    <include file="$(find cuadc)/launch/find_object_2d.launch"/>-->
 
     <node pkg="cuadc" type="cuadc_node" name="cuadc_node" launch-prefix="gnome-terminal --"/>
 
