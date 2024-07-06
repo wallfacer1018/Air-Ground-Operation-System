@@ -1,13 +1,14 @@
-import math, sys, random
-from math import *
-import time
+import sys
+
 import serial
+
 
 # 直行串口通信
 def forward(length):
     bytes_value = length.to_bytes(2, byteorder='big')
     ser.write(bytes_value)
-    
+
+
 # 转弯串口通信
 def turn(direction):
     if direction == "left":
@@ -15,19 +16,22 @@ def turn(direction):
     if direction == "right":
         ser.write(b'\x20\x5A')
 
+
 # 定义Node类，用于存储每个节点信息
 class Node(object):
     def __init__(self, point, parent, d, f, direction=None, action=None):
-        self.point = point      # 节点坐标
-        self.parent = parent    # 父节点对象地址
-        self.d = d              # Astar算法下：起点至该节点的确定距离
-        self.f = f              # Astar算法下：f = d + h
+        self.point = point  # 节点坐标
+        self.parent = parent  # 父节点对象地址
+        self.d = d  # Astar算法下：起点至该节点的确定距离
+        self.f = f  # Astar算法下：f = d + h
         self.direction = direction  # 移动方向
-        self.action = action        # 动作信息
+        self.action = action  # 动作信息
+
 
 # 曼哈顿距离
 def Manhattan(p1, p2):
     return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
+
 
 # 初始化障碍物
 def init_obstacles():
@@ -40,14 +44,16 @@ def init_obstacles():
     rectObs.append(((230, 260), (310, 350)))
     rectObs.append(((370, 260), (450, 350)))
 
+
 # 节点与障碍物碰撞检测
 def collides(p):
     buffer = 10
     for rect in rectObs:
         if (rect[0][0] - buffer <= p[0] <= rect[1][0] + buffer and
-            rect[0][1] - buffer <= p[1] <= rect[1][1] + buffer):
+                rect[0][1] - buffer <= p[1] <= rect[1][1] + buffer):
             return True
     return False
+
 
 # Astar估算函数
 def evaluation_Astar(ynode, goalPoint):
@@ -63,6 +69,7 @@ def evaluation_Astar(ynode, goalPoint):
                 openlist.append(ynode)
             return
     openlist.append(ynode)
+
 
 # 程序主要函数
 def run_game(start, end):
@@ -90,22 +97,28 @@ def run_game(start, end):
         for i in range(4):
             if i == 0:
                 direction = "up"
-                ynode = Node((xnode.point[0], xnode.point[1] + 10), xnode, xnode.d + 1, 0, direction, "move up 10 units")
+                ynode = Node((xnode.point[0], xnode.point[1] + 10), xnode, xnode.d + 1, 0, direction,
+                             "move up 10 units")
             elif i == 1:
                 direction = "down"
-                ynode = Node((xnode.point[0], xnode.point[1] - 10), xnode, xnode.d + 1, 0, direction, "move down 10 units")
+                ynode = Node((xnode.point[0], xnode.point[1] - 10), xnode, xnode.d + 1, 0, direction,
+                             "move down 10 units")
             elif i == 2:
                 direction = "left"
-                ynode = Node((xnode.point[0] - 10, xnode.point[1]), xnode, xnode.d + 1, 0, direction, "move left 10 units")
+                ynode = Node((xnode.point[0] - 10, xnode.point[1]), xnode, xnode.d + 1, 0, direction,
+                             "move left 10 units")
             elif i == 3:
                 direction = "right"
-                ynode = Node((xnode.point[0] + 10, xnode.point[1]), xnode, xnode.d + 1, 0, direction, "move right 10 units")
-            
+                ynode = Node((xnode.point[0] + 10, xnode.point[1]), xnode, xnode.d + 1, 0, direction,
+                             "move right 10 units")
+
             if xnode.direction is not None and xnode.direction != direction:
                 dir = ""
-                if (xnode.direction, direction) in [("up", "right"), ("right", "down"), ("down", "left"), ("left", "up")]:
+                if (xnode.direction, direction) in [("up", "right"), ("right", "down"), ("down", "left"),
+                                                    ("left", "up")]:
                     dir = "turn right"
-                elif (xnode.direction, direction) in [("right", "up"), ("down", "right"), ("left", "down"), ("up", "left")]:
+                elif (xnode.direction, direction) in [("right", "up"), ("down", "right"), ("left", "down"),
+                                                      ("up", "left")]:
                     dir = "turn left"
                 znode = Node((xnode.point[0], xnode.point[1]), xnode, xnode.d + 1, 0, direction, dir)
                 ynode = Node((ynode.point[0], ynode.point[1]), znode, znode.d + 1, 0, direction, ynode.action)
@@ -125,7 +138,7 @@ def run_game(start, end):
             currNode = currNode.parent
         path.reverse()
         actions.reverse()
-        
+
         # 合并连续的直行动作
         merged_actions = []
         current_action = None
@@ -146,21 +159,22 @@ def run_game(start, end):
                 merged_actions.append(action)
                 current_action = None
                 current_distance = 0
-        
+
         if current_action:
             merged_actions.append(f"move {current_action.split()[1]} {current_distance} units")
-        
+
         # for point in path:
         #     print(point)
-        
+
         for action in merged_actions:
             if action.startswith("move"):
                 forward(int(action.split()[2]))
             if action.startswith("turn"):
                 turn(action.split()[1])
-                
+
     else:
         print('Failed to find the path')
+
 
 def find_nearest_accessible_point(point):
     # 根据当前终点位置，搜索离其最近的可通行位置
@@ -176,7 +190,7 @@ def find_nearest_accessible_point(point):
                     if dist < min_dist:
                         min_dist = dist
                         nearest_point = (px, py)
-        
+
         # 遍历障碍物的左边界和右边界
         for px in [rect[0][0] - 20, rect[1][0] + 20]:
             for py in range(rect[0][1], rect[1][1] + 1, 10):
@@ -187,6 +201,7 @@ def find_nearest_accessible_point(point):
                         nearest_point = (px, py)
     return nearest_point
 
+
 if __name__ == '__main__':
     if len(sys.argv) != 2:
         print("Usage: python script.py startx,starty,endx,endy")
@@ -196,11 +211,11 @@ if __name__ == '__main__':
     if len(coords) != 4:
         print("Invalid input format. Please use startx,starty,endx,endy")
         sys.exit(1)
-        
-    ser = serial.Serial('/dev/ttyAMA2', 115200) #打开串口设备
+
+    ser = serial.Serial('/dev/ttyAMA2', 115200)  # 打开串口设备
     # ser = serial.Serial('/dev/ttyS0', 115200) #打开串口设备
     if ser.isOpen == False:
-        ser.open()          # 打开串口   
+        ser.open()  # 打开串口
     print('serial opened')
 
     ser.write(b'\xaa')
@@ -211,5 +226,5 @@ if __name__ == '__main__':
     ser.write(b'\xff')
 
     print('process finished')
-    
+
     ser.close()
