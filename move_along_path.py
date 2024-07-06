@@ -5,17 +5,32 @@ import time
 
 
 # 串口通信，告知stm32小车左轮和右轮的速度
+# 每个命令为两个字节，16进制
+# 1xyz，左转，速度模式为x，角度为yz，十进制最大值为255
+# 2xyz，右转，速度模式为x，角度为yz，十进制最大值为255
+# 3xyz，设置左轮速度，为xyz，十进制最大值为4095
+# 4xyz，设置右轮速度，为xyz，十进制最大值为4095
+# 5000，按照最新设置的左右轮速度前行
 def set_vel(vl, vr):
-    # Placeholder for sending speed commands via serial communication
-    # Example: ser.write(b'\x10' + angle_hex)
+    vl_hex = f'3{vl:03X}'.encode('utf-8')  # 将速度设置为16进制编码
+    vr_hex = f'4{vr:03X}'.encode('utf-8')  # 将速度设置为16进制编码
+    # ser.write(vl_hex)
+    # ser.write(vr_hex)
+    # ser.write(b'5000')  # 命令小车前行
     print(f"Setting velocities: Left = {vl}, Right = {vr}")
     return
 
-
 def turn(angle):
-    # Placeholder for turning the vehicle
+    angle_abs = int(abs(angle))
+    speed_mode = 1  # 假设速度模式为1
+
+    if angle > 0:  # 左转
+        command = f'1{speed_mode}{angle_abs:02X}'.encode('utf-8')
+    elif angle < 0:  # 右转
+        command = f'2{speed_mode}{angle_abs:02X}'.encode('utf-8')
+
+    # ser.write(command)
     print(f"Turning by {angle} degrees")
-    # Adjust this to your actual turning logic
     return
 
 
@@ -53,11 +68,11 @@ def move_to(p1, p2):
         angle = angle_between_vectors(target_vector, current_vector)
         if abs(angle) > 5:  # Adjust the threshold as needed
             if angle > 0:
-                set_vel(0, 1)  # Turn left
+                set_vel(50, 60)  # Turn left
             else:
-                set_vel(1, 0)  # Turn right
+                set_vel(60, 50)  # Turn right
         else:
-            set_vel(1, 1)  # Move forward
+            set_vel(50, 50)  # Move forward
         time.sleep(0.1)  # Adjust the delay as needed
     set_vel(0, 0)  # Stop the vehicle
 
