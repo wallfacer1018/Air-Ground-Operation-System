@@ -1,67 +1,68 @@
 import A_star_v2
 import uwb_kalman
 import numpy as np
+import time
 
 
 # 串口通信，告知stm32小车左轮和右轮的速度
 def set_vel(vl, vr):
+    # Placeholder for sending speed commands via serial communication
+    # Example: ser.write(b'\x10' + angle_hex)
+    print(f"Setting velocities: Left = {vl}, Right = {vr}")
     return
 
 
-
-
 def turn(angle):
-    # angle_hex = angle.to_bytes(1, byteorder='big')
-    # if direction == "left":
-    #     ser.write(b'\x10' + angle_hex)
-    # elif direction == "right":
-    #     ser.write(b'\x20' + angle_hex)
+    # Placeholder for turning the vehicle
+    print(f"Turning by {angle} degrees")
+    # Adjust this to your actual turning logic
     return
 
 
 # 计算向量夹角，单位为度
 # 算出正角度逆时针，负角度顺时针
 def angle_between_vectors(vector_a, vector_b):
-    # 计算点积
     dot_product = np.dot(vector_a, vector_b)
-
-    # 计算向量的模
     norm_a = np.linalg.norm(vector_a)
     norm_b = np.linalg.norm(vector_b)
-
-    # 计算余弦值
     cos_theta = dot_product / (norm_a * norm_b)
-
-    # 反余弦得到夹角（弧度）
     angle_radians = np.arccos(cos_theta)
-
-    # 将弧度转换为角度
     angle_degrees = np.degrees(angle_radians)
-
-    # 计算二维向量的叉积（结果是标量）
     cross_product = vector_a[0] * vector_b[1] - vector_a[1] * vector_b[0]
-
-    # 确定角度的正负
-    if cross_product < 0:  # 如果叉积为负，则角度为负
+    if cross_product < 0:
         angle_degrees = -angle_degrees
-
     return angle_degrees
 
 
 # ros Subscriber：使用uwb获得当前坐标，频率为50hz，使用kalman滤波以获得更精确的位置
 def get_current_pos():
+    # Placeholder for obtaining the current position using UWB and Kalman filtering
     return (0, 0)
 
 
 # 从一个节点走到另一个节点的运动控制，带有偏移矫正
 # 通过分别下达左右轮的速度指令来实现
 def move_to(p1, p2):
-
-    return
+    target_vector = np.subtract(p2, p1)
+    while True:
+        current_pos = get_current_pos()
+        current_vector = np.subtract(p2, current_pos)
+        distance_to_target = np.linalg.norm(current_vector)
+        if distance_to_target < 5:  # Adjust the threshold as needed
+            break
+        angle = angle_between_vectors(target_vector, current_vector)
+        if abs(angle) > 5:  # Adjust the threshold as needed
+            if angle > 0:
+                set_vel(0, 1)  # Turn left
+            else:
+                set_vel(1, 0)  # Turn right
+        else:
+            set_vel(1, 1)  # Move forward
+        time.sleep(0.1)  # Adjust the delay as needed
+    set_vel(0, 0)  # Stop the vehicle
 
 
 if __name__ == '__main__':
-
     # ser = serial.Serial('/dev/ttyAMA2', 115200)  # 打开串口设备
     # if not ser.isOpen:
     #     ser.open()
@@ -88,7 +89,6 @@ if __name__ == '__main__':
 
     # 从path中的起点开始，走过每一个坐标点，最终到达终点
     # 假设一开始小车朝向y轴放置
-
     for i in range(0, len(path) - 1):
         if i == 0:
             v0 = (0, 1)
@@ -102,7 +102,6 @@ if __name__ == '__main__':
 
         # 走到下一个节点
         move_to(path[i], path[i+1])
-
 
     print('process finished')
 
