@@ -25,7 +25,7 @@ H = np.array([
 Q = np.eye(4) * 0.01
 
 # 测量噪声协方差矩阵
-R = np.eye(2) * 0.1
+R = np.eye(2) * 2
 
 
 # 卡尔曼滤波
@@ -45,14 +45,14 @@ def kalman_filter(x, P, z):
     return x, P
 
 
-# 示例位置数据
-positions = [
-    [1.0, 1.0],
-    [1.1, 1.05],
-    # ... 更多位置数据
-]
+# # 示例位置数据
+# positions = [
+#     [1.0, 1.0],
+#     [1.1, 1.05],
+#     # ... 更多位置数据
+# ]
 
-# 使用卡尔曼滤波处理位置数据
-for pos in positions:
-    x, P = kalman_filter(x, P, pos)
-    print(f"Filtered position: {x[0]:.2f}, {x[2]:.2f}")
+# # 使用卡尔曼滤波处理位置数据
+# for pos in positions:
+#     x, P = kalman_filter(x, P, pos)
+#     print(f"Filtered position: {x[0]:.2f}, {x[2]:.2f}")

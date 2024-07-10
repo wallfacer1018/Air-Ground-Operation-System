@@ -135,16 +135,16 @@ def visualize_graph(graph, obstacles):
     plt.show()
 
 
-# # 示例使用
-# points = [(170, 80), (340, 80), (30, 90),
-#           (30, 230), (170, 225), (200, 235), (340, 230),
-#           (30, 375), (200, 375), (340, 375), (420, 375)]
-# obstacles = [((180, 50), (310, 200)),
-#              ((60, 110), (150, 200)),
-#              ((370, 50), (450, 200)),
-#              ((60, 260), (190, 350)),
-#              ((230, 260), (310, 350)),
-#              ((370, 260), (450, 350))]
+# 示例使用
+points = [(170, 80), (340, 80), (30, 90),
+          (30, 230), (170, 225), (200, 235), (340, 230),
+          (30, 375), (200, 375), (340, 375), (420, 375)]
+obstacles = [((180, 50), (310, 200)),
+             ((60, 110), (150, 200)),
+             ((370, 50), (450, 200)),
+             ((60, 260), (190, 350)),
+             ((230, 260), (310, 350)),
+             ((370, 260), (450, 350))]
 
 
 # print("Graph:", graph)
@@ -161,11 +161,11 @@ def visualize_graph(graph, obstacles):
 #     (2, 2): {(2, 1): 1}
 # }
 #
-# start = (135, 25)
-# goal = (100, 352)
-# points.append(start)
-# points.append(goal)
-# graph = create_graph(points, obstacles)
-# path = a_star(graph, start, goal)
-# print("Path:", path)
-# visualize_graph(graph, obstacles)
+start = (135, 25)
+goal = (100, 352)
+points.append(start)
+points.append(goal)
+graph = create_graph(points, obstacles)
+path = a_star(graph, start, goal)
+print("Path:", path)
+visualize_graph(graph, obstacles)
