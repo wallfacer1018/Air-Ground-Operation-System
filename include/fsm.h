@@ -1,5 +1,6 @@
 //
 // Created by Eason Hua on 6/23/24.
+// Last modified on 2024.08.09
 //
 
 #ifndef CUADC_FSM_H
@@ -7,15 +8,17 @@
 
 #include <Eigen/Eigen>
 #include <Eigen/Dense>
-#include <ros/ros.h>
 #include <iostream>
+#include <limits>
 #include <cmath>
 
+#include <ros/ros.h>
 #include <tf/transform_listener.h>
 #include <tf/transform_datatypes.h>
 
 // opencv头文件
 #include <opencv2/opencv.hpp>
+#include <cv_bridge/cv_bridge.h>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -38,10 +41,7 @@
 #include <darknet_ros_msgs/BoundingBoxes.h>
 #include <darknet_ros_msgs/CheckForObjectsResult.h>
 
-#include <easondrone_msgs/ControlCommand.h>
-
-#define NODE_NAME "cuadc_node"
-#define FLIGHT_HEIGHT 0.3
+#define FLIGHT_HEIGHT 3.0
 #define REACH_DIST 0.2
 #define cx 321.04638671875
 #define cy 243.44969177246094
@@ -67,31 +67,34 @@ private:
 
     FSM_EXEC_STATE exec_state_;
 
-    Eigen::Vector3d odom_pos_, odom_vel_, odom_acc_; // odometry state
-    Eigen::Quaterniond odom_orient_;
     bool have_odom_;
-    mavros_msgs::State mavros_state;
-    geographic_msgs::GeoPointStamped gp_origin;
+    Eigen::Vector3d odom_pos_, odom_vel_, odom_acc_; // odometry state
+    double odom_yaw_;
+    mavros_msgs::State current_state;
 
     //变量声明 - 服务
     mavros_msgs::SetMode offb_set_mode;
     mavros_msgs::CommandBool arm_cmd;
     Eigen::Vector3d end_pt_;
-    mavros_msgs::PositionTarget pose_cmd;
-    //即将发布的command
-    easondrone_msgs::ControlCommand easondrone_cmd_;
+    mavros_msgs::PositionTarget pos_setpoint;
     bool throw_flag_, land_flag_;
     tf::StampedTransform transform;
 
     int IMG_W, IMG_H;
     cv::Mat camera_intrinsics_;
+    cv::Mat depth_image;
+
     Eigen::Vector2d centerErrorPad_;
     tf::Vector3 pose_pad_vec_;
     Eigen::Vector3d pose_pad_;
 
-    ros::Timer gp_origin_timer_, exec_timer_;
-    ros::Subscriber state_sub, odom_sub_, camera_info_sub_, yolo_sub_;
-    ros::Publisher gp_origin_pub, local_pos_pub, easondrone_cmd_pub_;
+    Eigen::Vector2d centerErrorBucket_[3];
+    tf::Vector3 pose_bucket_vec_[3];
+    Eigen::Vector3d pose_bucket_[3];
+
+    ros::Timer exec_timer_;
+    ros::Subscriber state_sub, odom_sub_, camera_info_sub_, yolo_sub_, depth_sub_;
+    ros::Publisher setpoint_raw_local_pub;
     ros::ServiceClient set_mode_client, arming_client;
     tf::TransformListener tf_listener_;
 
@@ -99,18 +102,17 @@ private:
         exec_state_ = new_state;
     }
 
-    inline void gpOriginCallback(const ros::TimerEvent &e){
-        gp_origin_pub.publish(gp_origin);
-    }
-
+    /******** callback ********/
     void execFSMCallback(const ros::TimerEvent &e);
 
     inline void state_cb(const mavros_msgs::State::ConstPtr &msg){
-        mavros_state = *msg;
+        current_state = *msg;
     }
 
     // 保存无人机当前里程计信息，包括位置、速度和姿态
     inline void odometryCallback(const nav_msgs::OdometryConstPtr &msg){
+        have_odom_ = true;
+
         odom_pos_ << msg->pose.pose.position.x,
                      msg->pose.pose.position.y,
                      msg->pose.pose.position.z;
@@ -119,17 +121,21 @@ private:
                      msg->twist.twist.linear.y,
                      msg->twist.twist.linear.z;
 
-        //odom_acc_ = estimateAcc( msg );
+        Eigen::Quaterniond odom_orient_(msg->pose.pose.orientation.w,
+                                        msg->pose.pose.orientation.x,
+                                        msg->pose.pose.orientation.y,
+                                        msg->pose.pose.orientation.z);
 
-        odom_orient_.w() = msg->pose.pose.orientation.w;
-        odom_orient_.x() = msg->pose.pose.orientation.x;
-        odom_orient_.y() = msg->pose.pose.orientation.y;
-        odom_orient_.z() = msg->pose.pose.orientation.z;
+        // 将四元数转换至(roll,pitch,yaw)  by a 3-2-1 intrinsic Tait-Bryan rotation sequence
+        // https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+        // q0 q1 q2 q3
+        // w x y z
+        double q[4]{odom_orient_.w(), odom_orient_.x(), odom_orient_.y(), odom_orient_.z()};
 
-        have_odom_ = true;
+        odom_yaw_ = atan2(2.0 * (q[3] * q[0] + q[1] * q[2]), 1.0 - 2.0 * (q[2] * q[2] + q[3] * q[3]));
     }
 
-    void cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg) {
+    inline void cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg) {
         // TODO: actually, these two parameters should be replaced by cx & cy
         IMG_W = msg->width;
         IMG_H = msg->height;
@@ -144,6 +150,22 @@ private:
     }
 
     void yoloCallback(const darknet_ros_msgs::BoundingBoxes::ConstPtr &msg);
+
+    void depthCallback(const sensor_msgs::ImageConstPtr& msg){
+        // Convert the ROS image message to a CvImage pointer
+        cv_bridge::CvImagePtr cv_ptr;
+
+        try{
+            cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_32FC1);
+        }
+        catch (cv_bridge::Exception& e){
+            ROS_ERROR("cv_bridge exception: %s", e.what());
+            return;
+        }
+
+        // Compute the average depth
+        depth_image = cv_ptr->image;
+    }
 
 public:
     FSM() : exec_state_(IDLE) {}

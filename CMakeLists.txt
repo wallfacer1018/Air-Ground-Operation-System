@@ -25,9 +25,10 @@ find_package(catkin REQUIRED COMPONENTS
         rospy
         std_msgs
         nodelet
-        darknet_ros
-        darknet_ros_msgs
+#        darknet_ros
+#        darknet_ros_msgs
         easondrone_msgs
+        px4ctrl
 )
 
 # Find X11
@@ -45,7 +46,7 @@ find_package(Boost REQUIRED COMPONENTS
     thread
     date_time
 )
-find_package(OpenCV REQUIRED)
+find_package(OpenCV 4 REQUIRED)
 find_package(Eigen3 REQUIRED)
 
 catkin_package(
@@ -60,6 +61,7 @@ catkin_package(
             std_msgs
             image_transport
             nodelet
+        px4ctrl
 )
 
 ###########
@@ -72,7 +74,6 @@ include_directories(
   ${Boost_INUCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
-        $ENV{HOME}/EasonDrone/Modules/common/include
 )
 
 add_executable(cuadc_node

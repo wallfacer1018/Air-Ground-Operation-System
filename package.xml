@@ -6,7 +6,7 @@
     CUADC '24
   </description>
   <maintainer email="12010508@mail.sustech.edu.cn">Eason Hua</maintainer>
-  <license>MIT</license>
+  <license>Apache</license>
 
   <url type="repository">https://github.com/wallfacer1018/Air-Ground-Operation-System</url>
   <author email="12010508@mail.sustech.edu.cn">Eason Hua</author>
@@ -24,4 +24,5 @@
   <depend>darknet_ros</depend>
   <depend>easondrone_msgs</depend>
   <depend>std_msgs</depend>
+  <depend>px4ctrl</depend>
 </package>
