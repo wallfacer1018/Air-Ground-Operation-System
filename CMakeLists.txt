@@ -1,16 +1,11 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(cuadc)
 
-## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++14)
 
 add_definitions(-DDARKNET_FILE_PATH="$ENV{HOME}/EasonDrone/YOLO/darknet_ros/darknet")
 
-## Find catkin macros and libraries
-## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
-## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-    message_generation
     rostime
     roscpp
     rosconsole
@@ -64,10 +59,6 @@ catkin_package(
         px4ctrl
 )
 
-###########
-## Build ##
-###########
-
 include_directories(
         include
   ${catkin_INCLUDE_DIRS}
@@ -82,3 +73,6 @@ add_executable(cuadc_node
 )
 target_link_libraries(cuadc_node ${catkin_LIBRARIES})
 add_dependencies(cuadc_node ${catkin_EXPORTED_TARGETS})
+
+catkin_install_python(PROGRAMS scripts/pixel2world.py
+        DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})

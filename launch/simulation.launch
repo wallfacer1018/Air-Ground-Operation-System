@@ -1,0 +1,17 @@
+<launch>
+    <include file="$(find cuadc)/launch/gazebo_world.launch"/>
+
+    <include file="$(find easondrone_gazebo)/launch/sitl_p450.launch"/>
+
+    <include file="$(find easondrone_gazebo)/launch/transform.launch"/>
+
+    <node pkg="cuadc" type="cuadc_node" name="cuadc_node"
+          output="screen" launch-prefix="gnome-terminal --"/>
+
+    <node pkg="cuadc" type="pixel2world.py" name="pixel2world"
+          output="screen" launch-prefix="gnome-terminal --"/>
+
+    <include file="$(find cuadc)/launch/darknet_ros.launch"/>
+
+    <node type="rviz" name="rviz" pkg="rviz" args="-d $(find cuadc)/config/CUADC.rviz"/>
+</launch>
