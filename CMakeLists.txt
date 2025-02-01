@@ -1,29 +1,17 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.0.2)
 project(cuadc)
 
-add_compile_options(-std=c++14)
-
-add_definitions(-DDARKNET_FILE_PATH="$ENV{HOME}/EasonDrone/YOLO/darknet_ros/darknet")
+add_compile_options(-std=c++17)
 
 find_package(catkin REQUIRED COMPONENTS
-    rostime
     roscpp
-    rosconsole
-    roscpp_serialization
     sensor_msgs
     image_transport
     cv_bridge
-    actionlib
     tf2_eigen
     tf
         mavros_msgs
         rospy
-        std_msgs
-        nodelet
-#        darknet_ros
-#        darknet_ros_msgs
-        easondrone_msgs
-        px4ctrl
 )
 
 # Find X11
@@ -48,15 +36,10 @@ catkin_package(
         INCLUDE_DIRS
             include
         CATKIN_DEPENDS
-            std_msgs
             cv_bridge
             roscpp
-            actionlib
             rospy
-            std_msgs
             image_transport
-            nodelet
-        px4ctrl
 )
 
 include_directories(

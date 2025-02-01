@@ -18,7 +18,7 @@ implement: derive global position of landing_pad from pixel frame via YOLOv2
 implement: detect landing_pad via YOLOv2
 
 ## [v0.2.4] - 2024-06-27
-implement: detect landing_pad via find_object_2d
+(removed on 2025-02-01) implement: detect landing_pad via find_object_2d
 
 ## [v0.3.0] - 2024-06-27
 implement: autonomous landing via VITAL

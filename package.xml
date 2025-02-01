@@ -16,13 +16,6 @@
   <depend>roscpp</depend>
   <depend>mavros_msgs</depend>
   <depend>cv_bridge</depend>
-  <depend>actionlib</depend>
   <depend>rospy</depend>
   <depend>image_transport</depend>
-  <depend>nodelet</depend>
-  <depend>darknet_ros_msgs</depend>
-  <depend>darknet_ros</depend>
-  <depend>easondrone_msgs</depend>
-  <depend>std_msgs</depend>
-  <depend>px4ctrl</depend>
 </package>

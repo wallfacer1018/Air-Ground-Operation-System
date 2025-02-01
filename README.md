@@ -2,11 +2,11 @@
 
 ## Installation & Launch
 
-```shell
-cd ~/EasonDrone
-catkin_make install --source Mission/CUADC --build Mission/CUADC/build
+```sh
+cd ~/easondrone_ws
+catkin_make --source mission/CUADC --build mission/CUADC/build
 ```
 
-```shell
+```sh
 roslaunch cuadc simulation.launch
 ```
