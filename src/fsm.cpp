@@ -1,6 +1,6 @@
 //
-// Created by Eason Hua on 6/24/24.
-// last updated on 2024.07.22
+// Created by Eason Hua on 2024.06.24
+// last updated on 2025.02.01
 //
 
 #include "fsm.h"
@@ -11,21 +11,32 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
             ROS_INFO("FSM_EXEC_STATE: IDLE");
 
             if (current_state.mode != "OFFBOARD") {
+                offb_set_mode.request.custom_mode = "OFFBOARD";
+
                 if (set_mode_client.call(offb_set_mode) &&
                     offb_set_mode.response.mode_sent) {
-                    ROS_INFO("Offboard enabled");
+                    ROS_INFO("Offboard response sent");
+                }
+                else {
+                    ROS_ERROR("Offboard rejected by FCU");
+                }
+            }
+            else if (!current_state.armed) {
+                arm_cmd.request.value = true;
+
+                if (arming_client.call(arm_cmd) &&
+                    arm_cmd.response.success) {
+                    ROS_INFO("Arm response success");
+                }
+                else {
+                    ROS_ERROR("ARM rejected by PX4!");
                 }
             }
             else {
-                if (!current_state.armed) {
-                    if (arming_client.call(arm_cmd) &&
-                        arm_cmd.response.success) {
-                        ROS_INFO("Vehicle armed");
-                        changeFSMExecState(TAKE_OFF);
-                    }
-                }
+                changeFSMExecState(TAKE_OFF);
             }
 
+            pos_setpoint.coordinate_frame = 1;
             pos_setpoint.position.x = odom_pos_(0);
             pos_setpoint.position.y = odom_pos_(1);
             pos_setpoint.position.z = odom_pos_(2);
@@ -47,6 +58,7 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
             if ((odom_pos_ - end_pt_).norm() < REACH_DIST) {
                 ROS_INFO("Close to take off height.");
 
+                pos_setpoint.coordinate_frame = 1;
                 pos_setpoint.position.x = odom_pos_(0);
                 pos_setpoint.position.y = odom_pos_(1);
                 pos_setpoint.position.z = odom_pos_(2);
@@ -55,6 +67,7 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
                 changeFSMExecState(TO_THROW);
             }
             else {
+                pos_setpoint.coordinate_frame = 1;
                 pos_setpoint.position.x = end_pt_(0);
                 pos_setpoint.position.y = end_pt_(1);
                 pos_setpoint.position.z = end_pt_(2);
@@ -72,6 +85,7 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
             if ((odom_pos_ - end_pt_).norm() < REACH_DIST) {
                 cout << "[fsm] close to throw area" << endl;
 
+                pos_setpoint.coordinate_frame = 1;
                 pos_setpoint.position.x = odom_pos_(0);
                 pos_setpoint.position.y = odom_pos_(1);
                 pos_setpoint.position.z = odom_pos_(2);
@@ -80,6 +94,7 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
                 changeFSMExecState(THROW);
             }
             else {
+                pos_setpoint.coordinate_frame = 1;
                 pos_setpoint.position.x = end_pt_(0);
                 pos_setpoint.position.y = end_pt_(1);
                 pos_setpoint.position.z = end_pt_(2);
@@ -95,6 +110,7 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
 
             //TODO:
 
+            pos_setpoint.coordinate_frame = 1;
             pos_setpoint.position.x = odom_pos_(0);
             pos_setpoint.position.y = odom_pos_(1);
             pos_setpoint.position.z = odom_pos_(2);
@@ -111,6 +127,7 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
             if ((odom_pos_ - end_pt_).norm() < REACH_DIST) {
                 cout << "[fsm] close to see area" << endl;
 
+                pos_setpoint.coordinate_frame = 1;
                 pos_setpoint.position.x = odom_pos_(0);
                 pos_setpoint.position.y = odom_pos_(1);
                 pos_setpoint.position.z = odom_pos_(2);
@@ -119,6 +136,7 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
                 changeFSMExecState(SEE);
             }
             else {
+                pos_setpoint.coordinate_frame = 1;
                 pos_setpoint.position.x = end_pt_(0);
                 pos_setpoint.position.y = end_pt_(1);
                 pos_setpoint.position.z = end_pt_(2);
@@ -132,6 +150,7 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
 
             // TODO:
 
+            pos_setpoint.coordinate_frame = 1;
             pos_setpoint.position.x = odom_pos_(0);
             pos_setpoint.position.y = odom_pos_(1);
             pos_setpoint.position.z = odom_pos_(2);
@@ -149,6 +168,7 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
                 cout << "[fsm] close to land area" << endl;
                 land_flag_ = true;
 
+                pos_setpoint.coordinate_frame = 1;
                 pos_setpoint.position.x = odom_pos_(0);
                 pos_setpoint.position.y = odom_pos_(1);
                 pos_setpoint.position.z = odom_pos_(2);
@@ -157,6 +177,7 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
                 changeFSMExecState(LAND);
             }
             else {
+                pos_setpoint.coordinate_frame = 1;
                 pos_setpoint.position.x = odom_pos_(0);
                 pos_setpoint.position.y = odom_pos_(1);
                 pos_setpoint.position.z = odom_pos_(2);
@@ -178,6 +199,7 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
 
                 cout<< "CLOSE, land at: " << end_pt_.transpose() << endl;
 
+                pos_setpoint.coordinate_frame = 1;
                 pos_setpoint.position.x = end_pt_(0);
                 pos_setpoint.position.y = end_pt_(1);
                 pos_setpoint.position.z = end_pt_(2);
@@ -186,6 +208,7 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
             else {
                 cout<< "FAR, land at: " << end_pt_.transpose() << endl;
 
+                pos_setpoint.coordinate_frame = 1;
                 pos_setpoint.position.x = end_pt_(0);
                 pos_setpoint.position.y = end_pt_(1);
                 pos_setpoint.position.z = end_pt_(2);
@@ -199,6 +222,7 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
     setpoint_raw_local_pub.publish(pos_setpoint);
 }
 
+/*
 void FSM::yoloCallback(const darknet_ros_msgs::BoundingBoxes::ConstPtr &msg){
     cout << "------------------ YOLO ------------------" << endl;
 
@@ -278,6 +302,7 @@ void FSM::yoloCallback(const darknet_ros_msgs::BoundingBoxes::ConstPtr &msg){
         }
     }
 }
+*/
 
 void FSM::init(ros::NodeHandle &nh){
     exec_timer_ = nh.createTimer
@@ -287,12 +312,12 @@ void FSM::init(ros::NodeHandle &nh){
             ("/mavros/state", 10, &FSM::state_cb, this);
     odom_sub_ = nh.subscribe
             ("/mavros/local_position/odom", 10, &FSM::odometryCallback, this);
-    yolo_sub_ = nh.subscribe<darknet_ros_msgs::BoundingBoxes>
-            ("/darknet_ros/bounding_boxes", 10, &FSM::yoloCallback, this);
+    // yolo_sub_ = nh.subscribe<darknet_ros_msgs::BoundingBoxes>
+    //         ("/darknet_ros/bounding_boxes", 10, &FSM::yoloCallback, this);
     camera_info_sub_ = nh.subscribe
             ("/monocular/camera_info", 1, &FSM::cameraInfoCallback, this);
-    depth_sub_ = nh.subscribe
-            ("/camera/depth/image_raw", 1, &FSM::depthCallback, this);
+    // depth_sub_ = nh.subscribe
+    //         ("/camera/depth/image_raw", 1, &FSM::depthCallback, this);
 
     setpoint_raw_local_pub = nh.advertise<mavros_msgs::PositionTarget>
             ("/mavros/setpoint_raw/local", 10);

@@ -1,6 +1,6 @@
 //
-// Created by Eason Hua on 6/23/24.
-// Last modified on 2024.08.09
+// Created by Eason Hua on 2024.06.23
+// last updated on 2025.02.01
 //
 
 #ifndef CUADC_FSM_H
@@ -36,10 +36,6 @@
 #include <mavros_msgs/State.h>
 #include <mavros_msgs/PositionTarget.h>
 #include <geographic_msgs/GeoPointStamped.h>
-#include <find_object_2d/ObjectsStamped.h>
-#include <darknet_ros_msgs/BoundingBox.h>
-#include <darknet_ros_msgs/BoundingBoxes.h>
-#include <darknet_ros_msgs/CheckForObjectsResult.h>
 
 #define FLIGHT_HEIGHT 3.0
 #define REACH_DIST 0.2
@@ -149,8 +145,9 @@ private:
         }
     }
 
-    void yoloCallback(const darknet_ros_msgs::BoundingBoxes::ConstPtr &msg);
+    // void yoloCallback(const darknet_ros_msgs::BoundingBoxes::ConstPtr &msg);
 
+/*
     void depthCallback(const sensor_msgs::ImageConstPtr& msg){
         // Convert the ROS image message to a CvImage pointer
         cv_bridge::CvImagePtr cv_ptr;
@@ -166,6 +163,7 @@ private:
         // Compute the average depth
         depth_image = cv_ptr->image;
     }
+*/
 
 public:
     FSM() : exec_state_(IDLE) {}

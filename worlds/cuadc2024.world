@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <sdf version="1.6">
-  <world name="CUADC">
+  <world name="cuadc2024">
     <physics name='default_physics' default='0' type='ode'>
       <gravity>0 0 -9.8066</gravity>
       <ode>
@@ -28,36 +28,38 @@
       <uri>model://sun</uri>
     </include>
 
-    <!-- A ground plane -->
-    <include>
-      <uri>model://ground_plane</uri>
-    </include>
+    <model name='basketball_court'>
+      <include>
+        <uri>model://basketball_court</uri>
+        <pose> 10 0 -0.01 0 0 0 </pose>
+      </include>
+    </model>
 
-    <model name='landing_pad_H'>
+    <model name='landing_pad'>
       <include>
         <uri>model://landing_H</uri>
-        <pose> 0 0 0 0 0 0 </pose>
+        <pose> 0 0 0.01 0 0 0 </pose>
       </include>
     </model>
 
-    <model name="cylinder_small">
+    <model name="round_bucket_small">
       <include>
-        <uri>model://cylinder_small</uri>
-        <pose> 32.5 -2 0 0 0 0 </pose>
+        <uri>model://round_bucket_small</uri>
+        <pose> 4 -2 0.01 0 0 0 </pose>
       </include>
     </model>
 
-    <model name="cylinder_middle">
+    <model name="round_bucket_mid">
       <include>
-        <uri>model://cylinder_middle</uri>
-        <pose> 32.5 0 0 0 0 0 </pose>
+        <uri>model://round_bucket_mid</uri>
+        <pose> 5 0 0.01 0 0 0 </pose>
       </include>
     </model>
 
-    <model name="cylinder_big">
+    <model name="round_bucket_big">
       <include>
-        <uri>model://cylinder_big</uri>
-        <pose> 32.5 2 0 0 0 0 </pose>
+        <uri>model://round_bucket_big</uri>
+        <pose> 6 2 0.01 0 0 0 </pose>
       </include>
     </model>
   </world>

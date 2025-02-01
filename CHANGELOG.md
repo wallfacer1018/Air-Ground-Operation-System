@@ -36,7 +36,7 @@ implement: move to task area
 implement: Takeoff
 
 ## [v0.1.0] - 2024-06-23
-implement: OFFBOARD & arming
+(fixed on 2025-02-01) implement: Offboard & Arm
 
 ## [v0.0.1] - 2024-06-23
 build pass
