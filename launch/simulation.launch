@@ -2,22 +2,12 @@
     <include file="$(find easondrone_gazebo)/launch/mavros_posix_sitl.launch">
         <arg name="world" default="$(find easondrone_gazebo)/worlds/competition/cuadc2024.world"/>
         <arg name="sdf" default="$(find easondrone_gazebo)/models/drone/iris_d435i_vlp16/iris_d435i_vlp16.sdf"/>
-        <arg name="gui" default="false"/>
+        <arg name="gui" default="true"/>
     </include>
 
     <include file="$(find easondrone_gazebo)/launch/transform.launch"/>
 
-    <!-- <include file="$(find px4ctrl)/launch/px4ctrl.launch"/> -->
-
     <node type="odom_visualization" pkg="odom_visualization" name="odom_visualization"/>
-
-    <node pkg="cuadc" type="cuadc_node" name="cuadc_node"
-          output="screen" launch-prefix="gnome-terminal --"/>
-
-    <!-- <node pkg="cuadc" type="pixel2world.py" name="pixel2world"
-          output="screen" launch-prefix="gnome-terminal "/> -->
-
-    <!-- <include file="$(find cuadc)/launch/darknet_ros.launch"/> -->
 
     <node type="rviz" name="rviz" pkg="rviz" args="-d $(find cuadc)/config/CUADC.rviz"/>
 </launch>

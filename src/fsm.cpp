@@ -1,7 +1,29 @@
-//
-// Created by Eason Hua on 2024.06.24
-// last updated on 2025.02.01
-//
+/*
+    Copyright (c) 2025 Eason Hua
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+
+    Author: Eason Hua
+    Email: 12010508@mail.sustech.edu.cn
+    created on 2024.06.24
+    last updated on 2025.02.02
+*/
 
 #include "fsm.h"
 
@@ -53,7 +75,7 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
                 return;
             }
 
-            end_pt_ << 0.0, 0.0, FLIGHT_HEIGHT;
+            end_pt_ << 0.0, 0.0, 2;
 
             if ((odom_pos_ - end_pt_).norm() < REACH_DIST) {
                 ROS_INFO("Close to take off height.");
@@ -80,7 +102,7 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
         case TO_THROW:{
             ROS_INFO("FSM_EXEC_STATE: TO_THROW");
 
-            end_pt_ << 32.5, 0.0, FLIGHT_HEIGHT;
+            end_pt_ << 5, 2, 3;
 
             if ((odom_pos_ - end_pt_).norm() < REACH_DIST) {
                 cout << "[fsm] close to throw area" << endl;
@@ -91,7 +113,7 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
                 pos_setpoint.position.z = odom_pos_(2);
                 pos_setpoint.yaw = odom_yaw_;
 
-                changeFSMExecState(THROW);
+                changeFSMExecState(TO_SEE);
             }
             else {
                 pos_setpoint.coordinate_frame = 1;
@@ -122,7 +144,7 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
         case TO_SEE: {
             ROS_INFO("FSM_EXEC_STATE: TO_SEE");
 
-            end_pt_ << 57.5, 0.0, FLIGHT_HEIGHT;
+            end_pt_ << 5, -2, 3;
 
             if ((odom_pos_ - end_pt_).norm() < REACH_DIST) {
                 cout << "[fsm] close to see area" << endl;
@@ -133,7 +155,7 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
                 pos_setpoint.position.z = odom_pos_(2);
                 pos_setpoint.yaw = odom_yaw_;
 
-                changeFSMExecState(SEE);
+                changeFSMExecState(RETURN);
             }
             else {
                 pos_setpoint.coordinate_frame = 1;
@@ -162,7 +184,7 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
         case RETURN: {
             ROS_INFO("FSM_EXEC_STATE: RETURN");
 
-            end_pt_ << 0.0, 0.0, FLIGHT_HEIGHT;
+            end_pt_ << 0.0, 0.0, 5;
 
             if ((odom_pos_ - end_pt_).norm() < REACH_DIST) {
                 cout << "[fsm] close to land area" << endl;
@@ -178,9 +200,9 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
             }
             else {
                 pos_setpoint.coordinate_frame = 1;
-                pos_setpoint.position.x = odom_pos_(0);
-                pos_setpoint.position.y = odom_pos_(1);
-                pos_setpoint.position.z = odom_pos_(2);
+                pos_setpoint.position.x = end_pt_(0);
+                pos_setpoint.position.y = end_pt_(1);
+                pos_setpoint.position.z = end_pt_(2);
                 pos_setpoint.yaw = odom_yaw_;
             }
             break;
@@ -189,21 +211,38 @@ void FSM::execFSMCallback(const ros::TimerEvent &e){
         case LAND: {
             ROS_INFO("FSM_EXEC_STATE: LAND");
 
-            end_pt_ = pose_pad_;
+            end_pt_ << 0, 0, 0;
 
-            if ((odom_pos_ - end_pt_).norm() < REACH_DIST) {
+            if (!current_state.armed) {
+                exit(0);
+            }
+            else if ((odom_pos_ - end_pt_).norm() < REACH_DIST) {
                 land_flag_ = false;
 
-                end_pt_(0) = odom_pos_(0);
-                end_pt_(1) = odom_pos_(1);
+                // end_pt_(0) = odom_pos_(0);
+                // end_pt_(1) = odom_pos_(1);
 
-                cout<< "CLOSE, land at: " << end_pt_.transpose() << endl;
+                cout<< "CLOSE, switch to AUTO.LAND" << endl;
 
-                pos_setpoint.coordinate_frame = 1;
-                pos_setpoint.position.x = end_pt_(0);
-                pos_setpoint.position.y = end_pt_(1);
-                pos_setpoint.position.z = end_pt_(2);
-                pos_setpoint.yaw = odom_yaw_;
+                if (current_state.mode != "AUTO.LAND") {
+                    offb_set_mode.request.custom_mode = "AUTO.LAND";
+
+                    pos_setpoint.coordinate_frame = 1;
+                    pos_setpoint.position.x = end_pt_(0);
+                    pos_setpoint.position.y = end_pt_(1);
+                    pos_setpoint.position.z = end_pt_(2);
+                    pos_setpoint.yaw = odom_yaw_;
+
+                    if (set_mode_client.call(offb_set_mode) && offb_set_mode.response.mode_sent) {
+                        ROS_INFO("AUTO.LAND response sent");
+                    }
+                    else {
+                        ROS_ERROR("AUTO.LAND rejected by FCU");
+                    }
+                }
+                else {
+                    ROS_INFO("AUTO.LAND already enabled");
+                }
             }
             else {
                 cout<< "FAR, land at: " << end_pt_.transpose() << endl;
@@ -330,15 +369,29 @@ void FSM::init(ros::NodeHandle &nh){
             ("/mavros/set_mode");
 
     /******* init ********/
-    //setprecision(n) 设显示小数精度为n位
+    // 设显示小数精度为4位
     cout << setprecision(4);
 
-    //the setpoint publishing rate MUST be faster than 2Hz
+    /*
+    PX4 has a timeout of 500ms between two Offboard commands. 
+    If this timeout is exceeded, the commander will fall back to 
+    the last mode the vehicle was in before entering Offboard mode. 
+    This is why the publishing rate must be faster than 
+    2 Hz to also account for possible latencies. 
+    This is also the same reason why it is recommended 
+    to enter Offboard mode from Position mode, 
+    this way if the vehicle drops out of Offboard 
+    mode it will stop in its tracks and hover.
+    */
     ros::Rate rate(20.0);
 
     ROS_INFO("Waiting for FCU connection...");
 
-    // wait for FCU connection
+    /*
+    Before publishing anything, we wait for the connection 
+    to be established between MAVROS and the autopilot. 
+    This loop should exit as soon as a heartbeat message is received.
+    */
     while(ros::ok() && !current_state.connected){
         ros::spinOnce();
         rate.sleep();
@@ -381,7 +434,11 @@ void FSM::init(ros::NodeHandle &nh){
 
     ROS_WARN("Send a few setpoints before starting...");
 
-    // send a few setpoints before starting
+    /*
+    Before entering Offboard mode, you must have already started streaming setpoints. 
+    Otherwise the mode switch will be rejected. 
+    Here, 100 was chosen as an arbitrary amount.
+    */
     for(int i = 100; ros::ok() && i > 0; --i){
         setpoint_raw_local_pub.publish(pos_setpoint);
         ros::spinOnce();

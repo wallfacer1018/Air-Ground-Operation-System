@@ -14,21 +14,6 @@ find_package(catkin REQUIRED COMPONENTS
         rospy
 )
 
-# Find X11
-message ( STATUS "Searching for X11..." )
-find_package ( X11 REQUIRED )
-if ( X11_FOUND )
-    include_directories ( ${X11_INCLUDE_DIR} )
-    link_libraries ( ${X11_LIBRARIES} )
-    message ( STATUS " X11_INCLUDE_DIR: " ${X11_INCLUDE_DIR} )
-    message ( STATUS " X11_LIBRARIES: " ${X11_LIBRARIES} )
-endif ( X11_FOUND )
-
-## System dependencies are found with CMake's conventions
-find_package(Boost REQUIRED COMPONENTS
-    thread
-    date_time
-)
 find_package(OpenCV 4 REQUIRED)
 find_package(Eigen3 REQUIRED)
 
@@ -45,7 +30,6 @@ catkin_package(
 include_directories(
         include
   ${catkin_INCLUDE_DIRS}
-  ${Boost_INUCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
 )

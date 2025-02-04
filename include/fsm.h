@@ -1,7 +1,29 @@
-//
-// Created by Eason Hua on 2024.06.23
-// last updated on 2025.02.01
-//
+/*
+    Copyright (c) 2025 Eason Hua
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+
+    Author: Eason Hua
+    Email: 12010508@mail.sustech.edu.cn
+    created on 2024.06.23
+    last updated on 2025.02.02
+*/
 
 #ifndef CUADC_FSM_H
 #define CUADC_FSM_H
@@ -35,9 +57,8 @@
 #include <mavros_msgs/CommandBool.h>
 #include <mavros_msgs/State.h>
 #include <mavros_msgs/PositionTarget.h>
-#include <geographic_msgs/GeoPointStamped.h>
 
-#define FLIGHT_HEIGHT 3.0
+#define FLIGHT_HEIGHT 5
 #define REACH_DIST 0.2
 #define cx 321.04638671875
 #define cy 243.44969177246094
@@ -94,7 +115,7 @@ private:
     ros::ServiceClient set_mode_client, arming_client;
     tf::TransformListener tf_listener_;
 
-    inline void changeFSMExecState(FSM_EXEC_STATE new_state){
+    inline void changeFSMExecState(const FSM_EXEC_STATE new_state){
         exec_state_ = new_state;
     }
 
@@ -131,7 +152,7 @@ private:
         odom_yaw_ = atan2(2.0 * (q[3] * q[0] + q[1] * q[2]), 1.0 - 2.0 * (q[2] * q[2] + q[3] * q[3]));
     }
 
-    inline void cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg) {
+    inline void cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr &msg) {
         // TODO: actually, these two parameters should be replaced by cx & cy
         IMG_W = msg->width;
         IMG_H = msg->height;
@@ -148,7 +169,7 @@ private:
     // void yoloCallback(const darknet_ros_msgs::BoundingBoxes::ConstPtr &msg);
 
 /*
-    void depthCallback(const sensor_msgs::ImageConstPtr& msg){
+    void depthCallback(const sensor_msgs::ImageConstPtr &msg){
         // Convert the ROS image message to a CvImage pointer
         cv_bridge::CvImagePtr cv_ptr;
 
